@@ -13,7 +13,9 @@ import type {
   Transaction,
   TransactionFilters,
   TransactionSummary,
+  UpdateAgentInput,
   UpdateListingInput,
+  UpdateTransactionInput,
   UserRole,
 } from '~/types/api';
 
@@ -200,6 +202,45 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   }
 
+  async function updateAgent(input: UpdateAgentInput) {
+    isMutating.value = true;
+    errorMessage.value = '';
+    successMessage.value = '';
+
+    try {
+      const updated = await api.updateAgent(actor.value, input);
+      agents.value = agents.value.map((agent) => (agent.id === input.id ? updated : agent));
+      successMessage.value = `Agent updated for ${updated.name}.`;
+      return updated;
+    } catch (error) {
+      const appError = error as { statusMessage?: string };
+      errorMessage.value =
+        appError.statusMessage ?? 'An error occurred while updating the agent.';
+      throw error;
+    } finally {
+      isMutating.value = false;
+    }
+  }
+
+  async function deleteAgent(id: string) {
+    isMutating.value = true;
+    errorMessage.value = '';
+    successMessage.value = '';
+
+    try {
+      await api.deleteAgent(actor.value, id);
+      agents.value = agents.value.filter((agent) => agent.id !== id);
+      successMessage.value = 'Agent deleted.';
+    } catch (error) {
+      const appError = error as { statusMessage?: string };
+      errorMessage.value =
+        appError.statusMessage ?? 'An error occurred while deleting the agent.';
+      throw error;
+    } finally {
+      isMutating.value = false;
+    }
+  }
+
   async function createTransaction(input: CreateTransactionInput) {
     isMutating.value = true;
     errorMessage.value = '';
@@ -213,6 +254,47 @@ export const useDashboardStore = defineStore('dashboard', () => {
       const appError = error as { statusMessage?: string };
       errorMessage.value =
         appError.statusMessage ?? 'An error occurred while creating the transaction.';
+      throw error;
+    } finally {
+      isMutating.value = false;
+    }
+  }
+
+  async function updateTransaction(input: UpdateTransactionInput) {
+    isMutating.value = true;
+    errorMessage.value = '';
+    successMessage.value = '';
+
+    try {
+      const updated = await api.updateTransaction(actor.value, input, agents.value);
+      transactions.value = transactions.value.map((transaction) =>
+        transaction.id === input.id ? updated : transaction,
+      );
+      successMessage.value = `Transaction updated for ${updated.propertyRef}.`;
+      return updated;
+    } catch (error) {
+      const appError = error as { statusMessage?: string };
+      errorMessage.value =
+        appError.statusMessage ?? 'An error occurred while updating the transaction.';
+      throw error;
+    } finally {
+      isMutating.value = false;
+    }
+  }
+
+  async function deleteTransaction(id: string) {
+    isMutating.value = true;
+    errorMessage.value = '';
+    successMessage.value = '';
+
+    try {
+      await api.deleteTransaction(actor.value, id);
+      transactions.value = transactions.value.filter((transaction) => transaction.id !== id);
+      successMessage.value = 'Transaction deleted.';
+    } catch (error) {
+      const appError = error as { statusMessage?: string };
+      errorMessage.value =
+        appError.statusMessage ?? 'An error occurred while deleting the transaction.';
       throw error;
     } finally {
       isMutating.value = false;
@@ -367,11 +449,15 @@ export const useDashboardStore = defineStore('dashboard', () => {
     loadListings,
     previewCommission,
     createAgent,
+    updateAgent,
+    deleteAgent,
     createListing,
     updateListing,
     deleteListing,
     updateListingStatus,
     createTransaction,
+    updateTransaction,
+    deleteTransaction,
     transitionTransaction,
     setRole,
     resetFilters,

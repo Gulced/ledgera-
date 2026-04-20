@@ -22,6 +22,8 @@ import type {
   TransactionListResponse,
   TransactionSummary,
   CreateTransactionInput,
+  UpdateAgentInput,
+  UpdateTransactionInput,
 } from '~/types/api';
 
 function buildHeaders(actor: ActorContext) {
@@ -142,11 +144,32 @@ export function useLedgeraApi() {
     getAgents(actor: ActorContext) {
       return request<Agent[]>('/agents', { actor });
     },
+    getAgent(actor: ActorContext, id: string) {
+      return request<Agent>(`/agents/${id}`, { actor });
+    },
     createAgent(actor: ActorContext, body: CreateAgentInput) {
       return request<Agent>('/agents', {
         actor,
         method: 'POST',
         body,
+      });
+    },
+    updateAgent(actor: ActorContext, input: UpdateAgentInput) {
+      return request<Agent>(`/agents/${input.id}`, {
+        actor,
+        method: 'PATCH',
+        body: {
+          name: input.name,
+          email: input.email,
+          phone: input.phone,
+          isActive: input.isActive,
+        },
+      });
+    },
+    deleteAgent(actor: ActorContext, id: string) {
+      return request<null>(`/agents/${id}`, {
+        actor,
+        method: 'DELETE',
       });
     },
     createTransaction(actor: ActorContext, input: CreateTransactionInput, agents: Agent[]) {
@@ -170,6 +193,35 @@ export function useLedgeraApi() {
           listingAgent: { id: listingAgent.id, name: listingAgent.name },
           sellingAgent: { id: sellingAgent.id, name: sellingAgent.name },
         },
+      });
+    },
+    updateTransaction(actor: ActorContext, input: UpdateTransactionInput, agents: Agent[]) {
+      const listingAgent = agents.find((agent) => agent.id === input.listingAgentId);
+      const sellingAgent = agents.find((agent) => agent.id === input.sellingAgentId);
+
+      if (!listingAgent || !sellingAgent) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: 'Valid listing and selling agents must be selected.',
+        });
+      }
+
+      return request<Transaction>(`/transactions/${input.id}`, {
+        actor,
+        method: 'PATCH',
+        body: {
+          propertyRef: input.propertyRef,
+          totalServiceFee: input.totalServiceFee,
+          currency: input.currency,
+          listingAgent: { id: listingAgent.id, name: listingAgent.name },
+          sellingAgent: { id: sellingAgent.id, name: sellingAgent.name },
+        },
+      });
+    },
+    deleteTransaction(actor: ActorContext, id: string) {
+      return request<null>(`/transactions/${id}`, {
+        actor,
+        method: 'DELETE',
       });
     },
     transitionTransaction(actor: ActorContext, id: string, stage: Transaction['stage']) {

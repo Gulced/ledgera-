@@ -21,6 +21,7 @@ export type CommissionReason = 'listing' | 'selling' | 'listing_and_selling';
 export type UserRole = 'admin' | 'operations' | 'finance' | 'agent';
 export type ActivityAction =
   | 'transaction_created'
+  | 'transaction_updated'
   | 'stage_transitioned'
   | 'financials_locked';
 export type TransactionSortBy = 'createdAt' | 'updatedAt' | 'totalServiceFee';
@@ -90,6 +91,32 @@ export class CreateTransactionDto {
 export class TransitionTransactionDto {
   @IsIn(TRANSACTION_STAGE_VALUES)
   stage: TransactionStage;
+}
+
+export class UpdateTransactionDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  propertyRef?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  totalServiceFee?: number;
+
+  @IsOptional()
+  @IsIn(SUPPORTED_CURRENCY_VALUES)
+  currency?: SupportedCurrency;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AgentRefRequestDto)
+  listingAgent?: AgentRefRequestDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AgentRefRequestDto)
+  sellingAgent?: AgentRefRequestDto;
 }
 
 export class TransactionListQueryDto {

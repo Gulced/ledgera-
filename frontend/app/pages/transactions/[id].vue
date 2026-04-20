@@ -23,7 +23,11 @@ const relatedListing = ref<Listing | null>(null);
 const errorMessage = ref('');
 const successMessage = computed(() => store.successMessage);
 const isLoading = ref(true);
+const router = useRouter();
 const canAdvanceStage = computed(() =>
+  ['admin', 'operations'].includes(store.activeRole),
+);
+const canManageTransaction = computed(() =>
   ['admin', 'operations'].includes(store.activeRole),
 );
 const mapCoordinates = computed(() => {
@@ -67,6 +71,15 @@ watch(
     void loadTransactionDetail();
   },
 );
+
+function handleTransactionUpdated(updated: Transaction) {
+  transaction.value = updated;
+  void loadTransactionDetail();
+}
+
+async function handleTransactionDeleted() {
+  await router.push('/');
+}
 </script>
 
 <template>
@@ -188,6 +201,12 @@ watch(
         v-if="canAdvanceStage"
         :transaction="transaction"
         @updated="transaction = $event"
+      />
+      <EditTransactionPanel
+        v-if="canManageTransaction"
+        :transaction="transaction"
+        @updated="handleTransactionUpdated"
+        @deleted="handleTransactionDeleted"
       />
 
       <section class="panel">

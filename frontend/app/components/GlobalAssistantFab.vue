@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
+import { useAgentAssistantContext } from '~/composables/useAgentAssistantContext';
 import { useDashboardStore } from '~/stores/dashboard';
 import type {
   AssistantPageType,
@@ -12,6 +13,7 @@ import type {
 const api = useLedgeraApi();
 const route = useRoute();
 const store = useDashboardStore();
+const agentAssistantContext = useAgentAssistantContext();
 const { actor, filters, listingFilters, listings, summary, transactions } = storeToRefs(store);
 
 const isOpen = ref(false);
@@ -39,6 +41,10 @@ const pageType = computed<AssistantPageType>(() => {
     return 'listing_detail';
   }
 
+  if (route.path === '/agents') {
+    return 'agents';
+  }
+
   if (route.path === '/listings') {
     return 'listings';
   }
@@ -52,6 +58,8 @@ const pageTitle = computed(() => {
       return currentListing.value?.title ?? 'Listing detail';
     case 'transaction_detail':
       return currentTransaction.value?.propertyRef ?? 'Transaction detail';
+    case 'agents':
+      return agentAssistantContext.selectedAgent.value?.name ?? 'Agents workspace';
     case 'listings':
       return 'Listings workspace';
     default:
@@ -66,141 +74,176 @@ const suggestedPrompts = computed(() => {
     case 'listing_detail': {
       if (currentRole.value === 'agent') {
         return [
-          'Bu ilan için müşteriye kısa bir mesaj yaz.',
-          'Bu ilan için bir sonraki follow-up ne olmalı?',
-          'Bu ilanı daha iyi anlatmak için kısa bir özet yaz.',
-          'Bu ilan için bugün hangi işi yapmam daha doğru olur?',
+          'Write a short client message for this listing.',
+          'What should the next follow-up be for this listing?',
+          'Write a short summary that presents this listing clearly.',
+          'What is the best task to focus on for this listing today?',
         ];
       }
 
       if (currentRole.value === 'operations') {
         return [
-          'Bu ilan için operasyonel sıradaki adımı söyle.',
-          'Bu ilanda eksik olabilecek kayıtları listele.',
-          'Bu ilan için task checklist oluştur.',
-          'Bu ilanın risklerini operasyon açısından özetle.',
+          'What is the next operational step for this listing?',
+          'List anything that may be missing for this listing.',
+          'Create a task checklist for this listing.',
+          'Summarize the operational risks for this listing.',
         ];
       }
 
       if (currentRole.value === 'finance') {
         return [
-          'Bu ilanın transactiona dönüşmesi halinde finansal dikkat noktaları ne olur?',
-          'Bu ilanda finans açısından izlenmesi gereken riskleri yaz.',
-          'Bu kaydı raporlama açısından kısa özetle.',
-          'Bu ilan için finans takımına not çıkar.',
+          'If this listing becomes a transaction, what financial points should we watch?',
+          'Write the key finance risks to track for this listing.',
+          'Summarize this record briefly for reporting.',
+          'Write a short note for the finance team about this listing.',
         ];
       }
 
       return [
-        'Bu ilan için sonraki en mantıklı adım ne?',
-        'Bu ilan için müşteriye kısa bir mesaj yaz.',
-        'Bu ilanın risklerini özetle.',
-        'Bu ilan için follow-up task listesi oluştur.',
+        'What is the most logical next step for this listing?',
+        'Write a short client message for this listing.',
+        'Summarize the risks for this listing.',
+        'Create a follow-up task list for this listing.',
       ];
     }
     case 'transaction_detail': {
       if (currentRole.value === 'agent') {
         return [
-          'Bu işlem için müşteriye kısa güncelleme mesajı yaz.',
-          'Bu transactionda benim sıradaki aksiyonum ne olmalı?',
-          'Bu işlemi müşteriye sade dille özetle.',
-          'Bu transactionda gecikme riski var mı?',
+          'Write a short client update message for this transaction.',
+          'What should my next action be on this transaction?',
+          'Summarize this transaction for the client in simple language.',
+          'Is there a delay risk in this transaction?',
         ];
       }
 
       if (currentRole.value === 'operations') {
         return [
-          'Bu işlem için sıradaki operasyon adımını söyle.',
-          'Bu transactiondaki riskleri özetle.',
-          'Bu işlem için eksik olabilecek şeyleri listele.',
-          'Bu transaction için kontrol listesi oluştur.',
+          'What is the next operational step for this transaction?',
+          'Summarize the risks in this transaction.',
+          'List anything that may be missing for this transaction.',
+          'Create a checklist for this transaction.',
         ];
       }
 
       if (currentRole.value === 'finance') {
         return [
-          'Bu transactionın finansal risklerini özetle.',
-          'Komisyon akışını sade şekilde açıkla.',
-          'Bu işlemde kapanış öncesi finans kontrol listesi çıkar.',
-          'Finans ekibi için kısa bir durum özeti yaz.',
+          'Summarize the financial risks in this transaction.',
+          'Explain the commission flow in plain language.',
+          'Create a pre-closing finance checklist for this transaction.',
+          'Write a short status summary for the finance team.',
         ];
       }
 
       return [
-        'Bu işlem için sıradaki operasyon adımını söyle.',
-        'Bu transactiondaki riskleri özetle.',
-        'Müşteriye gönderilecek kısa güncelleme mesajı yaz.',
-        'Bu işlem için eksik olabilecek şeyleri listele.',
+        'What is the next operational step for this transaction?',
+        'Summarize the risks in this transaction.',
+        'Write a short client update message for this transaction.',
+        'List anything that may be missing for this transaction.',
+      ];
+    }
+    case 'agents': {
+      if (currentRole.value === 'agent') {
+        return [
+          'Based on my profile, what should I focus on today?',
+          'Write a short daily follow-up plan for me.',
+          'Suggest priorities based on my portfolio load.',
+          'Write a short work summary about me.',
+        ];
+      }
+
+      if (currentRole.value === 'operations') {
+        return [
+          'Which agents show workload or follow-up risk?',
+          'Write operational recommendations for the selected agent.',
+          'Summarize possible bottlenecks across agent distribution.',
+          'Create a short coordination plan for this agent list.',
+        ];
+      }
+
+      if (currentRole.value === 'finance') {
+        return [
+          'From the agent view, what should finance monitor?',
+          'Which heavy agent portfolios look most important?',
+          'Write a short agent-based summary for the finance team.',
+          'Comment on agent workloads that are likely to convert into transactions.',
+        ];
+      }
+
+      return [
+        'Write management priorities based on this agent view.',
+        'Which agents show workload or follow-up risk?',
+        'Write a short management summary for the selected agent.',
+        'Comment on team balance based on agent distribution.',
       ];
     }
     case 'listings': {
       if (currentRole.value === 'agent') {
         return [
-          'Kendi ilanlarım içinde bugün hangilerine odaklanmalıyım?',
-          'Bu listedeki ilanlar için kısa takip planı çıkar.',
-          'Hangi ilanlarda müşteri iletişimi öncelikli görünüyor?',
-          'Bu ilan listesi için günlük çalışma planı yaz.',
+          'Which of my listings should I focus on today?',
+          'Create a short follow-up plan for the listings on this page.',
+          'Which listings seem to need client communication first?',
+          'Write a daily work plan for this listing list.',
         ];
       }
 
       if (currentRole.value === 'operations') {
         return [
-          'Bu listing listesinden öncelikli takip edilmesi gerekenleri söyle.',
-          'Duruma göre hangi ilanlar riskli görünüyor?',
-          'Listeye göre hızlı bir operasyon planı öner.',
-          'Eksik veya gecikme riski taşıyan kayıtları işaretle.',
+          'Which listings on this page should be prioritized first?',
+          'Which listings look risky based on status?',
+          'Suggest a quick operational plan based on this list.',
+          'Flag records with missing information or delay risk.',
         ];
       }
 
       if (currentRole.value === 'finance') {
         return [
-          'Bu ilan listesinden finans açısından takip edilmesi gerekenleri söyle.',
-          'Hangi kayıtlar raporlama için önemli görünüyor?',
-          'Bu ilan havuzu için finans ekibine kısa özet çıkar.',
-          'İleride transactiona dönüşürse dikkat edilmesi gerekenleri yaz.',
+          'From this listing list, what should finance monitor?',
+          'Which records seem important for reporting?',
+          'Write a short summary for the finance team about this listing pool.',
+          'If these turn into transactions later, what should we watch?',
         ];
       }
 
       return [
-        'Bu listing listesinden öncelikli takip edilmesi gerekenleri söyle.',
-        'Duruma göre hangi ilanlar riskli görünüyor?',
-        'Bu sayfadaki ilanlar için ekip özeti çıkar.',
-        'Listeye göre hızlı bir operasyon planı öner.',
+        'Which listings on this page should be prioritized first?',
+        'Which listings look risky based on status?',
+        'Write a team summary for the listings on this page.',
+        'Suggest a quick operational plan based on this list.',
       ];
     }
     default: {
       if (currentRole.value === 'agent') {
         return [
-          'Bugün agent olarak neye odaklanmalıyım?',
-          'Benim için öncelikli görünen işleri özetle.',
-          'Kısa bir günlük çalışma planı çıkar.',
-          'Bana uygun takip önerileri yaz.',
+          'What should I focus on today as an agent?',
+          'Summarize the work that looks most urgent for me.',
+          'Create a short daily work plan.',
+          'Write follow-up recommendations that fit my workload.',
         ];
       }
 
       if (currentRole.value === 'operations') {
         return [
-          'Dashboard verilerine göre bugün neye odaklanmalıyız?',
-          'Riskli görünen başlıkları kısa özetle.',
-          'Kısa bir günlük operasyon özeti çıkar.',
-          'Bugün sıkışabilecek işleri listele.',
+          'Based on the dashboard, what should we focus on today?',
+          'Summarize the areas that look risky.',
+          'Create a short daily operations summary.',
+          'List the work that could become blocked today.',
         ];
       }
 
       if (currentRole.value === 'finance') {
         return [
-          'Dashboard verisine göre finans ekibi neye odaklanmalı?',
-          'Finansal risk taşıyan alanları özetle.',
-          'Bugün için kısa bir finans operasyon özeti çıkar.',
-          'Raporlama açısından dikkat edilmesi gerekenleri yaz.',
+          'Based on the dashboard, what should the finance team focus on?',
+          'Summarize the areas carrying financial risk.',
+          'Create a short finance operations summary for today.',
+          'Write what needs attention from a reporting perspective.',
         ];
       }
 
       return [
-        'Dashboard verilerine göre bugün neye odaklanmalıyız?',
-        'Riskli görünen başlıkları kısa özetle.',
-        'Kısa bir günlük operasyon özeti çıkar.',
-        'Bu veriye göre admin için önerilerini yaz.',
+        'Based on the dashboard, what should we focus on today?',
+        'Summarize the areas that look risky.',
+        'Create a short daily operations summary.',
+        'Write recommendations for the admin based on this data.',
       ];
     }
   }
@@ -221,6 +264,14 @@ const assistantContext = computed<Record<string, unknown>>(() => {
         filters: listingFilters.value,
         visibleListings: listings.value.slice(0, 12),
         totalVisibleListings: listings.value.length,
+      };
+    case 'agents':
+      return {
+        selectedAgent: agentAssistantContext.selectedAgent.value,
+        selectedMetrics: agentAssistantContext.selectedMetrics.value,
+        selectedListings: agentAssistantContext.selectedListings.value,
+        selectedTransactions: agentAssistantContext.selectedTransactions.value,
+        totalVisibleAgents: agentAssistantContext.totalVisibleAgents.value,
       };
     default:
       return {
@@ -418,7 +469,7 @@ watch(
         <textarea
           v-model="prompt"
           rows="4"
-          placeholder="Bu sayfanın içeriğine göre istediğin soruyu sor."
+          placeholder="Ask anything based on the content of this page."
         />
       </label>
 

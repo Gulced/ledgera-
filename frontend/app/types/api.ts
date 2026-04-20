@@ -71,7 +71,7 @@ export interface TransactionHistoryItem {
 
 export interface ActivityLogEntry {
   id: string;
-  type: 'transaction_created' | 'stage_transitioned' | 'financials_locked';
+  type: 'transaction_created' | 'transaction_updated' | 'stage_transitioned' | 'financials_locked';
   summary: string;
   timestamp: string;
   actorId: string;
@@ -187,12 +187,20 @@ export interface CreateAgentInput {
   isActive?: boolean;
 }
 
+export interface UpdateAgentInput extends CreateAgentInput {
+  id: string;
+}
+
 export interface CreateTransactionInput {
   propertyRef: string;
   totalServiceFee: number;
   currency: Transaction['currency'];
   listingAgentId: string;
   sellingAgentId: string;
+}
+
+export interface UpdateTransactionInput extends CreateTransactionInput {
+  id: string;
 }
 
 export type ListingStatus = 'active' | 'under_offer' | 'closed';
@@ -248,6 +256,7 @@ export interface ListingAssistantResponse {
 
 export type AssistantPageType =
   | 'dashboard'
+  | 'agents'
   | 'listings'
   | 'listing_detail'
   | 'transaction_detail';

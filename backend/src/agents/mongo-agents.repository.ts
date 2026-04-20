@@ -41,6 +41,26 @@ export class MongoAgentsRepository implements AgentsRepository {
     );
   }
 
+  async update(id: string, agent: AgentDto): Promise<AgentDto> {
+    const updated = await this.agentModel
+      .findOneAndReplace({ id }, agent, {
+        new: true,
+        upsert: false,
+      })
+      .lean<AgentDto | null>()
+      .exec();
+
+    if (!updated) {
+      throw new Error(`Agent ${id} could not be updated.`);
+    }
+
+    return this.stripMongoFields(updated);
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.agentModel.deleteOne({ id }).exec();
+  }
+
   private stripMongoFields(document: AgentDto & { _id?: unknown }) {
     const { _id, ...agent } = document;
 

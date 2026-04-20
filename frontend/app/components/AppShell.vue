@@ -11,6 +11,14 @@ const workspaceStore = useWorkspaceStore();
 const route = useRoute();
 
 const routeMeta = computed(() => {
+  if (route.path.startsWith('/agents')) {
+    return {
+      eyebrow: 'Agent Workspace',
+      title: 'Agent directory, ownership, and portfolio visibility',
+      subtitle: 'Review agent coverage, update profiles, and connect people to active listings and deal flow.',
+    };
+  }
+
   if (route.path.startsWith('/listings')) {
     return {
       eyebrow: 'Listing Workspace',
@@ -74,6 +82,14 @@ onMounted(async () => {
           <span>
             <strong>Listings</strong>
             <small>Inventory, status, and agent portfolios</small>
+          </span>
+        </NuxtLink>
+
+        <NuxtLink class="sidebar-nav__link" to="/agents">
+          <span class="sidebar-nav__icon">03</span>
+          <span>
+            <strong>Agents</strong>
+            <small>Profiles, activity context, and assignment health</small>
           </span>
         </NuxtLink>
       </nav>

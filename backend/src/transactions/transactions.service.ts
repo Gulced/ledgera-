@@ -19,9 +19,11 @@ import type {
   TransactionSortBy,
   TransactionStage,
   TransactionSummaryDto,
+  UpdateTransactionDto,
 } from './dto/transaction.dto';
 import {
   assertCanListTransactions,
+  assertCanManageTransaction,
   assertCanPreviewCommission,
   assertCanCreateTransaction,
   assertCanTransitionTransaction,
@@ -335,6 +337,93 @@ export class TransactionsService {
     return this.transactionsRepository.update(id, updated);
   }
 
+  async update(
+    id: string,
+    payload: UpdateTransactionDto,
+    actor: ActorContextDto,
+  ): Promise<TransactionDto> {
+    assertCanManageTransaction(actor);
+    const transaction = await this.findById(id, actor);
+    this.ensureFinancialsAreMutable(transaction);
+
+    if (
+      payload.propertyRef === undefined &&
+      payload.totalServiceFee === undefined &&
+      payload.currency === undefined &&
+      payload.listingAgent === undefined &&
+      payload.sellingAgent === undefined
+    ) {
+      throw new AppBadRequestException(
+        'INVALID_TRANSACTION_PAYLOAD',
+        'At least one field must be provided to update a transaction.',
+      );
+    }
+
+    const [nextListingAgent, nextSellingAgent] = await Promise.all([
+      payload.listingAgent
+        ? this.agentsService.findActiveById(payload.listingAgent.id)
+        : Promise.resolve(undefined),
+      payload.sellingAgent
+        ? this.agentsService.findActiveById(payload.sellingAgent.id)
+        : Promise.resolve(undefined),
+    ]);
+
+    const nextPayload: CreateTransactionDto = {
+      propertyRef: payload.propertyRef?.trim() || transaction.propertyRef,
+      totalServiceFee: payload.totalServiceFee ?? transaction.totalServiceFee,
+      currency: payload.currency ?? transaction.currency,
+      listingAgent: nextListingAgent
+        ? this.toAgentRef(nextListingAgent)
+        : transaction.listingAgent,
+      sellingAgent: nextSellingAgent
+        ? this.toAgentRef(nextSellingAgent)
+        : transaction.sellingAgent,
+    };
+
+    this.validateTransactionPayload(nextPayload, 'update');
+
+    const updatedAt = new Date().toISOString();
+    const updateLog = this.buildActivityLog(
+      'transaction_updated',
+      'Transaction details were updated before completion.',
+      actor,
+      updatedAt,
+      {
+        propertyRef: transaction.propertyRef,
+        totalServiceFee: transaction.totalServiceFee,
+        currency: transaction.currency,
+        listingAgent: transaction.listingAgent.name,
+        sellingAgent: transaction.sellingAgent.name,
+      },
+      {
+        propertyRef: nextPayload.propertyRef,
+        totalServiceFee: nextPayload.totalServiceFee,
+        currency: nextPayload.currency ?? 'EUR',
+        listingAgent: nextPayload.listingAgent.name,
+        sellingAgent: nextPayload.sellingAgent.name,
+      },
+    );
+
+    return this.transactionsRepository.update(id, {
+      ...transaction,
+      propertyRef: nextPayload.propertyRef,
+      totalServiceFee: nextPayload.totalServiceFee,
+      currency: nextPayload.currency ?? 'EUR',
+      listingAgent: nextPayload.listingAgent,
+      sellingAgent: nextPayload.sellingAgent,
+      commission: this.calculateCommission(nextPayload),
+      updatedAt,
+      activityLog: [...transaction.activityLog, updateLog],
+    });
+  }
+
+  async delete(id: string, actor: ActorContextDto): Promise<void> {
+    assertCanManageTransaction(actor);
+    const transaction = await this.findById(id, actor);
+    this.ensureFinancialsAreMutable(transaction);
+    await this.transactionsRepository.delete(id);
+  }
+
   calculateCommission(
     payload: CreateTransactionDto,
   ): CommissionBreakdownDto {
@@ -431,7 +520,7 @@ export class TransactionsService {
 
   private validateTransactionPayload(
     payload: CreateTransactionDto,
-    context: 'create' | 'preview',
+    context: 'create' | 'preview' | 'update',
   ) {
     this.validateFee(payload.totalServiceFee);
     this.validateCurrency(payload.currency ?? 'EUR', context);
@@ -439,7 +528,10 @@ export class TransactionsService {
     this.validateAgentRef(payload.sellingAgent, 'sellingAgent', context);
   }
 
-  private validateCurrency(currency: string, context: 'create' | 'preview' | 'transition') {
+  private validateCurrency(
+    currency: string,
+    context: 'create' | 'preview' | 'transition' | 'update',
+  ) {
     if (!SUPPORTED_CURRENCIES.includes(currency as SupportedCurrency)) {
       throw new AppBadRequestException(
         context === 'preview'
@@ -453,7 +545,7 @@ export class TransactionsService {
   private validateAgentRef(
     agent: AgentRefDto,
     fieldName: string,
-    context: 'create' | 'preview' | 'transition',
+    context: 'create' | 'preview' | 'transition' | 'update',
   ) {
     if (!agent?.id?.trim()) {
       throw new AppBadRequestException(

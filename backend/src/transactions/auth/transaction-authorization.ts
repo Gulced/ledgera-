@@ -11,6 +11,7 @@ import {
 
 const CREATE_ROLES: UserRole[] = ['admin', 'operations'];
 const TRANSITION_ROLES: UserRole[] = ['admin', 'operations'];
+const MANAGE_ROLES: UserRole[] = ['admin', 'operations'];
 const READ_ALL_ROLES: UserRole[] = ['admin', 'operations', 'finance'];
 const PREVIEW_ROLES: UserRole[] = ['admin', 'operations', 'finance'];
 const USER_ROLES: UserRole[] = ['admin', 'operations', 'finance', 'agent'];
@@ -55,6 +56,15 @@ export function assertCanTransitionTransaction(actor: ActorContextDto) {
     throw new AppForbiddenException(
       'UNAUTHORIZED_TRANSACTION_ACCESS',
       `${actor.role} role cannot transition transaction stages.`,
+    );
+  }
+}
+
+export function assertCanManageTransaction(actor: ActorContextDto) {
+  if (!MANAGE_ROLES.includes(actor.role)) {
+    throw new AppForbiddenException(
+      'UNAUTHORIZED_TRANSACTION_ACCESS',
+      `${actor.role} role cannot modify transactions.`,
     );
   }
 }

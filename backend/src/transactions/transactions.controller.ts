@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
+  HttpCode,
   Param,
   Patch,
   Post,
@@ -24,6 +26,7 @@ import {
   CreateTransactionDto,
   TransactionListQueryDto,
   TransitionTransactionDto,
+  UpdateTransactionDto,
 } from './dto/transaction.dto';
 import { TransactionsService } from './transactions.service';
 
@@ -134,6 +137,37 @@ export class TransactionsController {
     return this.transactionsService.transitionStage(
       id,
       payload.stage,
+      this.buildActorContext(userId, name, role),
+    );
+  }
+
+  @ApiOperation({ summary: 'Update transaction fields before financial lock.' })
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() payload: UpdateTransactionDto,
+    @Headers('x-user-id') userId?: string,
+    @Headers('x-user-name') name?: string,
+    @Headers('x-user-role') role?: UserRole,
+  ) {
+    return this.transactionsService.update(
+      id,
+      payload,
+      this.buildActorContext(userId, name, role),
+    );
+  }
+
+  @ApiOperation({ summary: 'Delete an unlocked transaction.' })
+  @HttpCode(204)
+  @Delete(':id')
+  async delete(
+    @Param('id') id: string,
+    @Headers('x-user-id') userId?: string,
+    @Headers('x-user-name') name?: string,
+    @Headers('x-user-role') role?: UserRole,
+  ) {
+    await this.transactionsService.delete(
+      id,
       this.buildActorContext(userId, name, role),
     );
   }

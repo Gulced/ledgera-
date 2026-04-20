@@ -60,6 +60,10 @@ export class MongoTransactionsRepository implements TransactionsRepository {
     return this.stripMongoFields(updated);
   }
 
+  async delete(id: string): Promise<void> {
+    await this.transactionModel.deleteOne({ id }).exec();
+  }
+
   private stripMongoFields(document: TransactionDto & { _id?: unknown }) {
     const { _id, ...transaction } = document;
 

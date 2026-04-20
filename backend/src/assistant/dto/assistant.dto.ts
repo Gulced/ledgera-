@@ -3,6 +3,7 @@ import type { ActorContextDto } from '../../transactions/dto/transaction.dto';
 
 export const ASSISTANT_PAGE_TYPES = [
   'dashboard',
+  'agents',
   'listings',
   'listing_detail',
   'transaction_detail',

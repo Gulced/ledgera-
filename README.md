@@ -4,9 +4,12 @@ Ledgera is a role-aware real-estate operations platform built around listings, t
 
 The app includes:
 - transaction lifecycle management
+- transaction editing and safe deletion before financial lock
 - listing inventory and status tracking
+- agent directory with role-aware CRUD and portfolio context
 - commission preview and payout breakdown
 - role-based workspaces for `admin`, `operations`, `finance`, and `agent`
+- global AI workspace assistant with page-aware prompts and context-aware fallback guidance
 - follow-ups, notes, document placeholders, and activity history
 
 ## Quick Start
@@ -70,10 +73,28 @@ Notes:
 ## Recommended Review Flow
 
 1. Sign in as `admin`
-2. Review dashboard, listings, and transaction detail pages
+2. Review dashboard, listings, agents, and transaction detail pages
 3. Create an extra `operations`, `finance`, or `agent` account from the admin panel
 4. Sign out and sign back in with the new account
 5. Verify that each role lands in a different visibility model
+
+## Recent Product Additions
+
+- `Agents` workspace:
+  - dedicated `/agents` page
+  - agent create, edit, delete
+  - role-aware visibility
+  - selected agent portfolio context using listings and transactions
+- `Transactions` management:
+  - transaction update and delete endpoints
+  - edit panel on transaction detail
+  - deletion/editing blocked once financial lock is active
+  - transaction update events recorded in audit log
+- `AI assistant`:
+  - floating assistant available across workspaces
+  - page-aware prompts for dashboard, listings, agents, and transaction detail
+  - agent workspace responses now use selected agent context
+  - assistant prompts and fallback responses are in English
 
 ## Docs
 

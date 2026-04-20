@@ -224,3 +224,59 @@ These choices were made to make the backend behave like a small transactional op
 - error handling is integration-ready
 
 The result is a backend that is intentionally optimized for operational trust and financial traceability rather than only endpoint completeness.
+
+## Agent Workspace and AI Layer
+
+The frontend now treats `agents` as a first-class workspace rather than a simple reference list.
+
+Implemented additions:
+
+- dedicated `Agents` workspace in the sidebar
+- role-aware agent listing
+- admin CRUD for agent profiles
+- selected agent portfolio context using related listings and transactions
+- global floating AI assistant that adapts prompts and context per page
+
+Why this design:
+
+- Agent identity is not only a backend reference concern; it is also an operational planning surface.
+- The selected-agent context gives management and operations users a faster way to reason about workload and ownership without leaving the page.
+- The AI layer is intentionally context-aware rather than generic chat, so it can speak to the currently visible workspace using real page data.
+
+The assistant currently supports:
+
+- dashboard context
+- listings context
+- listing detail context
+- transaction detail context
+- agent workspace context
+
+The assistant is also designed with a dual-source response model:
+
+- Gemini when available
+- a structured fallback response when the model is unavailable or times out
+
+This keeps the interface usable during local demos and failure cases, while still preserving a richer AI path when network/model access is healthy.
+
+## Transaction Editing Policy
+
+The transaction domain now supports controlled editing and deletion before completion lock.
+
+Implemented behavior:
+
+- `admin` and `operations` can update transactions before financial lock
+- `admin` and `operations` can delete unlocked transactions
+- updating a transaction recalculates commission snapshots
+- update activity is written to the audit log as `transaction_updated`
+- completed and locked transactions remain immutable
+
+Why this design:
+
+- Real operations teams need to correct transaction details while a deal is still in motion.
+- That flexibility cannot be allowed after completion because payouts and audit state must remain stable.
+- By allowing mutation only before lock, the system stays operationally practical without violating the ledger-like behavior expected after completion.
+
+This keeps the product aligned with its core rule:
+
+- active deals can be managed
+- completed financial records must remain trustworthy
