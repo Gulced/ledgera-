@@ -16,14 +16,18 @@ const form = reactive({
 
 const documents = computed(() => workspace.getDocuments(props.entityType, props.entityId));
 
-function addDocument() {
+async function addDocument() {
   if (!form.name.trim()) {
     return;
   }
 
-  workspace.addDocumentPlaceholder(props.entityType, props.entityId, form);
+  await workspace.addDocumentPlaceholder(props.entityType, props.entityId, form);
   form.name = '';
 }
+
+onMounted(() => {
+  void workspace.loadEntityWorkspace(props.entityType, props.entityId);
+});
 </script>
 
 <template>

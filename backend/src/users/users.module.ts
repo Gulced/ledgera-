@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AgentsModule } from '../agents/agents.module';
+import { GeminiEmailValidationService } from '../common/gemini-email-validation.service';
 import { MongoUsersRepository } from './mongo-users.repository';
 import { UserRecord, UserSchema } from './schemas/user.schema';
 import { UsersController } from './users.controller';
@@ -20,6 +21,7 @@ import { UsersService } from './users.service';
   controllers: [UsersController],
   providers: [
     UsersService,
+    GeminiEmailValidationService,
     {
       provide: UsersRepository,
       useClass: MongoUsersRepository,

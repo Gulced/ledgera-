@@ -1,23 +1,67 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { AppBadRequestException } from '../common/errors/app-error';
 import type { ActorContextDto } from '../transactions/dto/transaction.dto';
-import type { AssistantPageType, AssistantResponseDto } from './dto/assistant.dto';
+import type {
+  AssistantHistoryQueryDto,
+  AssistantMessageDto,
+  AssistantPageType,
+  AssistantResponseDto,
+} from './dto/assistant.dto';
+import {
+  AssistantMessageRecord,
+  type AssistantMessageDocument,
+} from './schemas/assistant-message.schema';
 
 @Injectable()
 export class AssistantService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    @InjectModel(AssistantMessageRecord.name)
+    private readonly assistantMessageModel: Model<AssistantMessageDocument>,
+  ) {}
+
+  async listHistory(
+    actor: ActorContextDto,
+    query: AssistantHistoryQueryDto,
+  ): Promise<AssistantMessageDto[]> {
+    const records = await this.assistantMessageModel
+      .find({
+        actorId: actor.userId,
+        pageType: query.pageType,
+        ...(query.entityId ? { entityId: query.entityId } : { entityId: { $exists: false } }),
+      })
+      .sort({ createdAt: 1 })
+      .limit(40)
+      .lean()
+      .exec();
+
+    return records.map((record) => this.toMessageDto(record));
+  }
 
   async chat(input: {
     actor: ActorContextDto;
     pageType: AssistantPageType;
     prompt: string;
     title?: string;
+    entityId?: string;
     context: Record<string, unknown>;
   }): Promise<AssistantResponseDto> {
-    const { actor, pageType, prompt, title, context } = input;
+    const { actor, pageType, prompt, title, entityId, context } = input;
     let response: string;
     let source: 'gemini' | 'fallback' = 'gemini';
+
+    await this.assistantMessageModel.create({
+      actorId: actor.userId,
+      actorRole: actor.role,
+      actorName: actor.name,
+      pageType,
+      entityId,
+      role: 'user',
+      body: prompt,
+    });
 
     try {
       response = await this.generateGeminiResponse({ pageType, prompt, title, context });
@@ -26,12 +70,46 @@ export class AssistantService {
       response = this.buildFallbackResponse({ actor, pageType, prompt, title, context });
     }
 
+    await this.assistantMessageModel.create({
+      actorId: actor.userId,
+      actorRole: actor.role,
+      actorName: actor.name,
+      pageType,
+      entityId,
+      role: 'assistant',
+      body: response,
+      source,
+    });
+
     return {
       pageType,
       prompt,
       response,
       source,
+      entityId,
       requestedBy: actor,
+    };
+  }
+
+  private toMessageDto(record: {
+    _id?: unknown;
+    id?: string;
+    pageType: AssistantPageType;
+    entityId?: string;
+    role: 'user' | 'assistant';
+    body: string;
+    source?: 'gemini' | 'fallback';
+    createdAt: Date | string;
+  }): AssistantMessageDto {
+    return {
+      id: String(record._id ?? record.id),
+      pageType: record.pageType,
+      entityId: record.entityId,
+      role: record.role,
+      body: record.body,
+      source: record.source,
+      createdAt:
+        record.createdAt instanceof Date ? record.createdAt.toISOString() : String(record.createdAt),
     };
   }
 

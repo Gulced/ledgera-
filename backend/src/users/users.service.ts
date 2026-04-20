@@ -1,6 +1,7 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { AgentsService } from '../agents/agents.service';
+import { GeminiEmailValidationService } from '../common/gemini-email-validation.service';
 import {
   AppBadRequestException,
   AppUnauthorizedException,
@@ -19,6 +20,7 @@ export class UsersService implements OnModuleInit {
     @Inject(UsersRepository)
     private readonly usersRepository: UsersRepository,
     private readonly agentsService: AgentsService,
+    private readonly emailValidationService: GeminiEmailValidationService,
   ) {}
 
   async onModuleInit() {
@@ -32,6 +34,7 @@ export class UsersService implements OnModuleInit {
 
   async create(payload: CreateUserDto): Promise<UserDto> {
     const normalizedEmail = payload.email.trim().toLowerCase();
+    await this.emailValidationService.assertValidEmail(normalizedEmail, 'account email');
     const existing = await this.usersRepository.findByEmail(normalizedEmail);
 
     if (existing) {
@@ -69,6 +72,7 @@ export class UsersService implements OnModuleInit {
 
   async login(payload: LoginUserDto): Promise<UserDto> {
     const normalizedEmail = payload.email.trim().toLowerCase();
+    await this.emailValidationService.assertValidEmail(normalizedEmail, 'login email');
     const account = await this.usersRepository.findByEmail(normalizedEmail);
 
     if (!account || account.password !== payload.password) {

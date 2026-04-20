@@ -32,6 +32,14 @@ const messages = ref<Array<{
 }>>([]);
 const chatBody = ref<HTMLElement | null>(null);
 
+const contextEntityId = computed(() => {
+  if (pageType.value === 'listing_detail' || pageType.value === 'transaction_detail') {
+    return route.params.id as string | undefined;
+  }
+
+  return undefined;
+});
+
 const pageType = computed<AssistantPageType>(() => {
   if (/^\/transactions\/[^/]+$/.test(route.path)) {
     return 'transaction_detail';
@@ -67,7 +75,7 @@ const pageTitle = computed(() => {
   }
 });
 
-const currentRole = computed(() => actor.value.role);
+const currentRole = computed(() => actor.value?.role ?? 'admin');
 
 const suggestedPrompts = computed(() => {
   switch (pageType.value) {
@@ -317,6 +325,24 @@ async function loadRouteContext() {
   }
 }
 
+async function loadHistory() {
+  try {
+    const history = await api.getAssistantHistory(actor.value, {
+      pageType: pageType.value,
+      entityId: contextEntityId.value,
+    });
+
+    messages.value = history.map((item) => ({
+      id: item.id,
+      role: item.role,
+      body: item.body,
+      source: item.source,
+    }));
+  } catch {
+    messages.value = [];
+  }
+}
+
 async function askAssistant(customPrompt?: string) {
   const nextPrompt = (customPrompt ?? prompt.value).trim();
 
@@ -344,6 +370,7 @@ async function askAssistant(customPrompt?: string) {
       api.chatAssistant(actor.value, {
         pageType: pageType.value,
         title: pageTitle.value,
+        entityId: contextEntityId.value,
         prompt: nextPrompt,
         context: assistantContext.value,
       }),
@@ -390,15 +417,18 @@ watch(
   { deep: true },
 );
 
-watch(
-  () => route.fullPath,
-  () => {
-    messages.value = [];
-    prompt.value = '';
-    void loadRouteContext();
-  },
-  { immediate: true },
-);
+onMounted(() => {
+  watch(
+    () => route.fullPath,
+    async () => {
+      messages.value = [];
+      prompt.value = '';
+      await loadRouteContext();
+      await loadHistory();
+    },
+    { immediate: true },
+  );
+});
 </script>
 
 <template>

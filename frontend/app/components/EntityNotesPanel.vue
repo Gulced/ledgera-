@@ -18,7 +18,7 @@ const notes = computed(() => workspace.getNotes(props.entityType, props.entityId
 
 const schema = z.string().min(3, 'Add a more descriptive internal note.');
 
-function submitNote() {
+async function submitNote() {
   validationError.value = '';
   const parsed = schema.safeParse(noteBody.value);
 
@@ -27,9 +27,13 @@ function submitNote() {
     return;
   }
 
-  workspace.addNote(props.entityType, props.entityId, parsed.data);
+  await workspace.addNote(props.entityType, props.entityId, parsed.data);
   noteBody.value = '';
 }
+
+onMounted(() => {
+  void workspace.loadEntityWorkspace(props.entityType, props.entityId);
+});
 </script>
 
 <template>

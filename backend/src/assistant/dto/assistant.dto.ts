@@ -22,8 +22,21 @@ export class AssistantRequestDto {
   @IsString()
   title?: string;
 
+  @IsOptional()
+  @IsString()
+  entityId?: string;
+
   @IsObject()
   context: Record<string, unknown>;
+}
+
+export class AssistantHistoryQueryDto {
+  @IsIn(ASSISTANT_PAGE_TYPES)
+  pageType: AssistantPageType;
+
+  @IsOptional()
+  @IsString()
+  entityId?: string;
 }
 
 export interface AssistantResponseDto {
@@ -31,5 +44,16 @@ export interface AssistantResponseDto {
   prompt: string;
   response: string;
   source: 'gemini' | 'fallback';
+  entityId?: string;
   requestedBy: ActorContextDto;
+}
+
+export interface AssistantMessageDto {
+  id: string;
+  pageType: AssistantPageType;
+  entityId?: string;
+  role: 'user' | 'assistant';
+  body: string;
+  source?: 'gemini' | 'fallback';
+  createdAt: string;
 }

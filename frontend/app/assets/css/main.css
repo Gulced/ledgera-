@@ -978,6 +978,16 @@ select {
   color: #fff;
   box-shadow: 0 18px 38px rgba(45, 36, 26, 0.22);
   cursor: pointer;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) ease,
+    filter var(--motion-base) ease;
+}
+
+.assistant-fab:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 24px 44px rgba(45, 36, 26, 0.28);
+  filter: saturate(1.05);
 }
 
 .assistant-drawer {
@@ -988,6 +998,7 @@ select {
   max-height: min(78vh, 780px);
   overflow: auto;
   padding: 20px;
+  animation: drawer-enter var(--motion-slow) var(--motion-smooth);
 }
 
 .assistant-suggestions {
@@ -1029,7 +1040,11 @@ select {
   border-radius: 22px;
   cursor: pointer;
   text-align: left;
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-base) ease,
+    background var(--motion-base) ease;
 }
 
 .agent-card:hover,
@@ -1037,6 +1052,10 @@ select {
   transform: translateY(-2px);
   border-color: rgba(107, 92, 255, 0.22);
   box-shadow: 0 18px 38px rgba(34, 41, 72, 0.08);
+}
+
+.agent-card--selected {
+  animation: soft-pulse 2.6s ease-in-out infinite;
 }
 
 .agent-card__top {
@@ -1095,6 +1114,15 @@ select {
   gap: 6px;
   padding: 14px 16px;
   border-radius: 18px;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-base) ease;
+}
+
+.agent-context-item:hover {
+  transform: var(--hover-lift);
+  border-color: rgba(107, 92, 255, 0.18);
 }
 
 .agent-context-item span,
@@ -1280,6 +1308,49 @@ select {
   --success-soft: rgba(58, 201, 142, 0.14);
   --warning-soft: rgba(255, 184, 77, 0.16);
   --shadow: 0 24px 80px rgba(34, 41, 72, 0.08);
+  --motion-fast: 160ms;
+  --motion-base: 240ms;
+  --motion-slow: 420ms;
+  --motion-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-bounce: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --hover-lift: translateY(-3px);
+  --hover-lift-strong: translateY(-6px) scale(1.01);
+  --focus-ring: 0 0 0 4px rgba(107, 92, 255, 0.08);
+}
+
+@keyframes panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes drawer-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) translateX(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(107, 92, 255, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(107, 92, 255, 0.08);
+  }
 }
 
 body {
@@ -1319,6 +1390,7 @@ body {
   border-radius: 32px;
   background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(247,249,255,0.78));
   backdrop-filter: blur(18px);
+  animation: panel-enter var(--motion-slow) var(--motion-smooth);
 }
 
 .sidebar-brand {
@@ -1354,12 +1426,22 @@ body {
   border-radius: 20px;
   border: 1px solid transparent;
   background: rgba(244, 246, 255, 0.72);
-  transition: 180ms ease;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    border-color var(--motion-fast) ease,
+    background var(--motion-base) ease,
+    box-shadow var(--motion-base) ease;
 }
 
 .sidebar-nav__link.router-link-active {
   background: linear-gradient(135deg, rgba(107, 92, 255, 0.14), rgba(255,255,255,0.94));
   border-color: rgba(107, 92, 255, 0.18);
+  box-shadow: 0 18px 38px rgba(88, 77, 215, 0.12);
+}
+
+.sidebar-nav__link:hover {
+  transform: var(--hover-lift);
+  border-color: rgba(107, 92, 255, 0.14);
 }
 
 .sidebar-nav__icon {
@@ -1372,6 +1454,15 @@ body {
   color: var(--accent);
   font-size: 0.8rem;
   font-weight: 700;
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) ease;
+}
+
+.sidebar-nav__link:hover .sidebar-nav__icon,
+.sidebar-nav__link.router-link-active .sidebar-nav__icon {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 24px rgba(107, 92, 255, 0.18);
 }
 
 .sidebar-nav__link strong,
@@ -1429,6 +1520,7 @@ body {
   border: 1px solid var(--line);
   border-radius: 32px;
   background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(247,249,255,0.8));
+  animation: panel-enter var(--motion-slow) var(--motion-smooth);
 }
 
 .shell__topbar h1 {
@@ -1474,6 +1566,11 @@ body {
   border-radius: 16px;
   padding: 12px 18px;
   border: 1px solid rgba(131, 142, 181, 0.16);
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) ease,
+    border-color var(--motion-fast) ease,
+    background var(--motion-base) ease;
 }
 
 .ghost-button {
@@ -1486,6 +1583,14 @@ body {
   color: white;
 }
 
+.ghost-button:hover,
+.primary-button:hover,
+.top-nav__link:hover,
+.table-link:hover {
+  transform: var(--hover-lift);
+  box-shadow: 0 20px 36px rgba(41, 48, 90, 0.12);
+}
+
 .panel,
 .summary-card,
 .auth-card {
@@ -1493,6 +1598,11 @@ body {
   border: 1px solid var(--line);
   background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,250,255,0.82));
   backdrop-filter: blur(18px);
+  animation: panel-enter var(--motion-slow) var(--motion-smooth);
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) ease,
+    border-color var(--motion-fast) ease;
 }
 
 .panel {
@@ -1541,6 +1651,10 @@ body {
   overflow: hidden;
 }
 
+.workspace-hero:hover {
+  transform: translateY(-2px);
+}
+
 .workspace-hero__copy {
   max-width: 68ch;
 }
@@ -1573,6 +1687,16 @@ body {
   border-radius: 22px;
   background: rgba(255,255,255,0.86);
   border: 1px solid rgba(131, 142, 181, 0.12);
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-base) ease;
+}
+
+.workspace-hero__metrics > div:hover {
+  transform: var(--hover-lift);
+  border-color: rgba(107, 92, 255, 0.16);
+  box-shadow: 0 20px 36px rgba(41, 48, 90, 0.1);
 }
 
 .workspace-hero__metrics span {
@@ -1595,6 +1719,11 @@ body {
   position: relative;
   padding: 22px;
   overflow: hidden;
+}
+
+.summary-card:hover {
+  transform: var(--hover-lift);
+  border-color: rgba(107, 92, 255, 0.16);
 }
 
 .summary-card::before {
@@ -1691,7 +1820,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: rgba(107, 92, 255, 0.4);
-  box-shadow: 0 0 0 4px rgba(107, 92, 255, 0.08);
+  box-shadow: var(--focus-ring);
 }
 
 .filters-actions,
@@ -1731,6 +1860,12 @@ textarea:focus {
 
 .transaction-table tbody tr:hover {
   background: rgba(107, 92, 255, 0.04);
+}
+
+.transaction-table tbody tr {
+  transition:
+    background var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
 }
 
 .transaction-table p,
@@ -1797,6 +1932,16 @@ textarea:focus {
   border-radius: 24px;
   border: 1px solid rgba(131, 142, 181, 0.12);
   background: rgba(255,255,255,0.84);
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    box-shadow var(--motion-base) ease,
+    border-color var(--motion-fast) ease;
+}
+
+.listing-card:hover {
+  transform: var(--hover-lift-strong);
+  border-color: rgba(107, 92, 255, 0.16);
+  box-shadow: 0 22px 40px rgba(37, 45, 86, 0.12);
 }
 
 .listing-card__overlay-link {
@@ -1895,6 +2040,15 @@ textarea:focus {
   border-radius: 20px;
   border: 1px solid rgba(131, 142, 181, 0.12);
   background: rgba(255, 255, 255, 0.8);
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-base) ease;
+}
+
+.listings-overview__item:hover {
+  transform: var(--hover-lift);
+  border-color: rgba(107, 92, 255, 0.16);
 }
 
 .listings-overview__item span {
@@ -2046,6 +2200,15 @@ textarea:focus {
   border-radius: 20px;
   border: 1px solid rgba(131, 142, 181, 0.12);
   background: rgba(255,255,255,0.78);
+  transition:
+    transform var(--motion-base) var(--motion-bounce),
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-base) ease;
+}
+
+.feed-card:hover {
+  transform: var(--hover-lift);
+  border-color: rgba(107, 92, 255, 0.16);
 }
 
 .feed-card__top {
@@ -2233,5 +2396,16 @@ textarea:focus {
 
   .auth-brand-lockup__logo {
     width: 154px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
   }
 }

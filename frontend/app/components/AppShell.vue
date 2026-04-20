@@ -48,7 +48,7 @@ async function signOut() {
 }
 
 onMounted(async () => {
-  workspaceStore.hydrate();
+  await workspaceStore.hydrate();
   await authStore.loadAccounts();
 
   if (!dashboardStore.agents.length) {

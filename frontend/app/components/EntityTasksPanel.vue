@@ -46,7 +46,7 @@ const schema = z.object({
   dueDate: z.string().min(1, 'Select a due date.'),
 });
 
-function submitTask() {
+async function submitTask() {
   validationError.value = '';
   const parsed = schema.safeParse(form);
 
@@ -57,7 +57,7 @@ function submitTask() {
 
   const selectedAssignee = assigneeOptions.value.find((account) => account.id === form.assigneeId);
 
-  workspace.addTask(props.entityType, props.entityId, {
+  await workspace.addTask(props.entityType, props.entityId, {
     title: form.title,
     dueDate: form.dueDate,
     assigneeName: selectedAssignee?.label ?? authStore.currentUser?.name ?? 'Unassigned',
@@ -66,6 +66,10 @@ function submitTask() {
   form.dueDate = '';
   form.assigneeId = '';
 }
+
+onMounted(() => {
+  void workspace.loadEntityWorkspace(props.entityType, props.entityId);
+});
 </script>
 
 <template>

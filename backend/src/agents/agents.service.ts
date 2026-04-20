@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { GeminiEmailValidationService } from '../common/gemini-email-validation.service';
 import {
   AppBadRequestException,
   AppForbiddenException,
@@ -15,6 +16,7 @@ export class AgentsService {
   constructor(
     @Inject(AgentsRepository)
     private readonly agentsRepository: AgentsRepository,
+    private readonly emailValidationService: GeminiEmailValidationService,
   ) {}
 
   async findAll(actor?: ActorContextDto): Promise<AgentDto[]> {
@@ -59,6 +61,9 @@ export class AgentsService {
 
   async create(payload: CreateAgentDto, actor?: ActorContextDto): Promise<AgentDto> {
     this.assertCanManageAgents(actor, 'create');
+    if (payload.email?.trim()) {
+      await this.emailValidationService.assertValidEmail(payload.email, 'agent email');
+    }
     const now = new Date().toISOString();
     const generatedId = await this.generateAgentId();
 
@@ -107,6 +112,10 @@ export class AgentsService {
       isActive: payload.isActive ?? agent.isActive,
       updatedAt: new Date().toISOString(),
     };
+
+    if (nextAgent.email) {
+      await this.emailValidationService.assertValidEmail(nextAgent.email, 'agent email');
+    }
 
     return this.agentsRepository.update(id, nextAgent);
   }

@@ -5,6 +5,7 @@ import type {
   ApiError,
   ApiSuccess,
   AssistantPageType,
+  AssistantMessage,
   AssistantResponse,
   CommissionPreview,
   CreateAgentInput,
@@ -24,6 +25,14 @@ import type {
   CreateTransactionInput,
   UpdateAgentInput,
   UpdateTransactionInput,
+  CreateWorkspaceDocumentInput,
+  CreateWorkspaceNoteInput,
+  CreateWorkspaceTaskInput,
+  WorkspaceDocument,
+  WorkspaceEntityType,
+  WorkspaceEvent,
+  WorkspaceNote,
+  WorkspaceTask,
 } from '~/types/api';
 
 function buildHeaders(actor: ActorContext) {
@@ -316,6 +325,7 @@ export function useLedgeraApi() {
         pageType: AssistantPageType;
         prompt: string;
         title?: string;
+        entityId?: string;
         context: Record<string, unknown>;
       },
     ) {
@@ -323,6 +333,94 @@ export function useLedgeraApi() {
         actor,
         method: 'POST',
         body,
+      });
+    },
+    getAssistantHistory(
+      actor: ActorContext,
+      query: {
+        pageType: AssistantPageType;
+        entityId?: string;
+      },
+    ) {
+      return request<AssistantMessage[]>('/assistant/history', {
+        actor,
+        query: cleanQuery(query) as Record<string, string | number>,
+      });
+    },
+    getWorkspaceNotes(
+      actor: ActorContext,
+      query?: { entityType?: WorkspaceEntityType; entityId?: string },
+    ) {
+      return request<WorkspaceNote[]>('/workspace/notes', {
+        actor,
+        query: cleanQuery(query ?? {}) as Record<string, string | number>,
+      });
+    },
+    createWorkspaceNote(actor: ActorContext, body: CreateWorkspaceNoteInput) {
+      return request<WorkspaceNote>('/workspace/notes', {
+        actor,
+        method: 'POST',
+        body,
+      });
+    },
+    getWorkspaceTasks(
+      actor: ActorContext,
+      query?: { entityType?: WorkspaceEntityType; entityId?: string; limit?: number },
+    ) {
+      return request<WorkspaceTask[]>('/workspace/tasks', {
+        actor,
+        query: cleanQuery(query ?? {}) as Record<string, string | number>,
+      });
+    },
+    createWorkspaceTask(actor: ActorContext, body: CreateWorkspaceTaskInput) {
+      return request<WorkspaceTask>('/workspace/tasks', {
+        actor,
+        method: 'POST',
+        body,
+      });
+    },
+    updateWorkspaceTaskStatus(
+      actor: ActorContext,
+      id: string,
+      status: WorkspaceTask['status'],
+    ) {
+      return request<WorkspaceTask>(`/workspace/tasks/${id}/status`, {
+        actor,
+        method: 'PATCH',
+        body: { status },
+      });
+    },
+    getWorkspaceDocuments(
+      actor: ActorContext,
+      query?: { entityType?: WorkspaceEntityType; entityId?: string },
+    ) {
+      return request<WorkspaceDocument[]>('/workspace/documents', {
+        actor,
+        query: cleanQuery(query ?? {}) as Record<string, string | number>,
+      });
+    },
+    createWorkspaceDocument(actor: ActorContext, body: CreateWorkspaceDocumentInput) {
+      return request<WorkspaceDocument>('/workspace/documents', {
+        actor,
+        method: 'POST',
+        body,
+      });
+    },
+    updateWorkspaceDocumentStatus(
+      actor: ActorContext,
+      id: string,
+      status: WorkspaceDocument['status'],
+    ) {
+      return request<WorkspaceDocument>(`/workspace/documents/${id}/status`, {
+        actor,
+        method: 'PATCH',
+        body: { status },
+      });
+    },
+    getWorkspaceEvents(actor: ActorContext, query?: { limit?: number }) {
+      return request<WorkspaceEvent[]>('/workspace/events', {
+        actor,
+        query: cleanQuery(query ?? {}) as Record<string, string | number>,
       });
     },
   };

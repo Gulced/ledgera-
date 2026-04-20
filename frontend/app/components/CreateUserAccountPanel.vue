@@ -22,7 +22,7 @@ const errorMessage = ref('');
 const schema = z.object({
   role: z.enum(['operations', 'finance', 'agent']),
   name: z.string().trim().min(2, 'Full name must be at least 2 characters.'),
-  email: z.string().email('Enter a valid email address.'),
+  email: z.string().trim().min(1, 'Email is required.'),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
 });
 

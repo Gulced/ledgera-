@@ -7,6 +7,7 @@ import { HealthController } from './health.controller';
 import { ListingsModule } from './listings/listings.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { UsersModule } from './users/users.module';
+import { WorkspaceModule } from './workspace/workspace.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { UsersModule } from './users/users.module';
     ListingsModule,
     TransactionsModule,
     UsersModule,
+    WorkspaceModule,
   ],
   controllers: [HealthController],
   providers: [],

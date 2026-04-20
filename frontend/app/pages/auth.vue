@@ -19,7 +19,7 @@ const loginForm = reactive({
 });
 
 const loginSchema = z.object({
-  email: z.string().email('Enter a valid email address.'),
+  email: z.string().trim().min(1, 'Enter your email address.'),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
 });
 

@@ -266,7 +266,18 @@ export interface AssistantResponse {
   prompt: string;
   response: string;
   source: 'gemini' | 'fallback';
+  entityId?: string;
   requestedBy: ActorContext;
+}
+
+export interface AssistantMessage {
+  id: string;
+  pageType: AssistantPageType;
+  entityId?: string;
+  role: 'user' | 'assistant';
+  body: string;
+  source?: 'gemini' | 'fallback';
+  createdAt: string;
 }
 
 export interface UpdateListingStatusInput {
@@ -286,6 +297,12 @@ export interface WorkspaceNote {
   createdAt: string;
 }
 
+export interface CreateWorkspaceNoteInput {
+  entityType: WorkspaceEntityType;
+  entityId: string;
+  body: string;
+}
+
 export interface WorkspaceTask {
   id: string;
   entityType: WorkspaceEntityType;
@@ -297,6 +314,14 @@ export interface WorkspaceTask {
   createdAt: string;
 }
 
+export interface CreateWorkspaceTaskInput {
+  entityType: WorkspaceEntityType;
+  entityId: string;
+  title: string;
+  dueDate: string;
+  assigneeName?: string;
+}
+
 export interface WorkspaceDocument {
   id: string;
   entityType: WorkspaceEntityType;
@@ -305,6 +330,14 @@ export interface WorkspaceDocument {
   type: 'agreement' | 'deed' | 'invoice' | 'commission_sheet' | 'compliance_note';
   status: 'pending' | 'ready';
   createdAt: string;
+}
+
+export interface CreateWorkspaceDocumentInput {
+  entityType: WorkspaceEntityType;
+  entityId: string;
+  name: string;
+  type: WorkspaceDocument['type'];
+  status: WorkspaceDocument['status'];
 }
 
 export interface WorkspaceEvent {

@@ -17,7 +17,7 @@ const validationError = ref('');
 
 const schema = z.object({
   name: z.string().trim().min(2, 'Agent name is required.'),
-  email: z.string().email('Please enter a valid email address.').or(z.literal('')),
+  email: z.string().trim().or(z.literal('')),
   phone: z.string().optional(),
   isActive: z.boolean(),
 });

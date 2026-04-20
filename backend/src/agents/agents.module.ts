@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { GeminiEmailValidationService } from '../common/gemini-email-validation.service';
 import { AgentsController } from './agents.controller';
 import { MongoAgentsRepository } from './mongo-agents.repository';
 import { AgentsRepository } from './agents.repository';
@@ -18,6 +19,7 @@ import { AgentRecord, AgentSchema } from './schemas/agent.schema';
   controllers: [AgentsController],
   providers: [
     AgentsService,
+    GeminiEmailValidationService,
     {
       provide: AgentsRepository,
       useClass: MongoAgentsRepository,

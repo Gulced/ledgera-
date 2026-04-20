@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { useAuthStore } from '~/stores/auth';
 import type {
+  ActorContext,
   Agent,
   Listing,
   Transaction,
@@ -12,29 +13,18 @@ import type {
   WorkspaceTask,
 } from '~/types/api';
 
-const STORAGE_KEY = 'ledgera-workspace';
+function mergeById<T extends { id: string }>(current: T[], incoming: T[]) {
+  const byId = new Map(current.map((item) => [item.id, item] as const));
 
-type WorkspaceSnapshot = {
-  notes: WorkspaceNote[];
-  tasks: WorkspaceTask[];
-  documents: WorkspaceDocument[];
-  events: WorkspaceEvent[];
-};
+  for (const item of incoming) {
+    byId.set(item.id, item);
+  }
 
-function createId(prefix: string) {
-  return `${prefix}_${crypto.randomUUID().slice(0, 8)}`;
-}
-
-function emptySnapshot(): WorkspaceSnapshot {
-  return {
-    notes: [],
-    tasks: [],
-    documents: [],
-    events: [],
-  };
+  return [...byId.values()];
 }
 
 export const useWorkspaceStore = defineStore('workspace', () => {
+  const api = useLedgeraApi();
   const authStore = useAuthStore();
 
   const notes = ref<WorkspaceNote[]>([]);
@@ -42,62 +32,94 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const documents = ref<WorkspaceDocument[]>([]);
   const events = ref<WorkspaceEvent[]>([]);
   const isHydrated = ref(false);
+  const isLoading = ref(false);
+  const errorMessage = ref('');
 
-  function hydrate() {
-    if (!import.meta.client || isHydrated.value) {
-      return;
+  const actor = computed<ActorContext | null>(() => {
+    const session = authStore.currentUser;
+
+    if (!session) {
+      return null;
     }
 
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      const parsed = raw ? (JSON.parse(raw) as WorkspaceSnapshot) : emptySnapshot();
-      notes.value = parsed.notes ?? [];
-      tasks.value = parsed.tasks ?? [];
-      documents.value = parsed.documents ?? [];
-      events.value = parsed.events ?? [];
-    } catch {
+    return {
+      userId: session.role === 'agent' ? session.linkedAgentId ?? session.id : session.id,
+      name: session.name,
+      role: session.role,
+    };
+  });
+
+  async function hydrate(force = false) {
+    if (!actor.value) {
       notes.value = [];
       tasks.value = [];
       documents.value = [];
       events.value = [];
-    } finally {
-      isHydrated.value = true;
-    }
-  }
-
-  function persist() {
-    if (!import.meta.client) {
+      isHydrated.value = false;
       return;
     }
 
-    const snapshot: WorkspaceSnapshot = {
-      notes: notes.value,
-      tasks: tasks.value,
-      documents: documents.value,
-      events: events.value,
-    };
+    if (isHydrated.value && !force) {
+      return;
+    }
 
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    isLoading.value = true;
+    errorMessage.value = '';
+
+    try {
+      const [notesResponse, tasksResponse, documentsResponse, eventsResponse] = await Promise.all([
+        api.getWorkspaceNotes(actor.value),
+        api.getWorkspaceTasks(actor.value),
+        api.getWorkspaceDocuments(actor.value),
+        api.getWorkspaceEvents(actor.value, { limit: 20 }),
+      ]);
+
+      notes.value = notesResponse;
+      tasks.value = tasksResponse;
+      documents.value = documentsResponse;
+      events.value = eventsResponse;
+      isHydrated.value = true;
+    } catch (error) {
+      const appError = error as { statusMessage?: string };
+      errorMessage.value =
+        appError.statusMessage ?? 'Workspace data could not be loaded.';
+    } finally {
+      isLoading.value = false;
+    }
   }
 
-  function recordEvent(input: {
-    title: string;
-    description: string;
-    entityType?: WorkspaceEntityType;
-    entityId?: string;
-  }) {
-    const actorName = authStore.currentUser?.name ?? 'System';
-    events.value.unshift({
-      id: createId('evt'),
-      title: input.title,
-      description: input.description,
-      createdAt: new Date().toISOString(),
-      actorName,
-      entityType: input.entityType,
-      entityId: input.entityId,
-    });
-    events.value = events.value.slice(0, 50);
-    persist();
+  async function loadEntityWorkspace(entityType: WorkspaceEntityType, entityId: string) {
+    if (!actor.value) {
+      return;
+    }
+
+    const [entityNotes, entityTasks, entityDocuments] = await Promise.all([
+      api.getWorkspaceNotes(actor.value, { entityType, entityId }),
+      api.getWorkspaceTasks(actor.value, { entityType, entityId }),
+      api.getWorkspaceDocuments(actor.value, { entityType, entityId }),
+    ]);
+
+    notes.value = mergeById(
+      notes.value.filter((item) => !(item.entityType === entityType && item.entityId === entityId)),
+      entityNotes,
+    );
+    tasks.value = mergeById(
+      tasks.value.filter((item) => !(item.entityType === entityType && item.entityId === entityId)),
+      entityTasks,
+    );
+    documents.value = mergeById(
+      documents.value.filter((item) => !(item.entityType === entityType && item.entityId === entityId)),
+      entityDocuments,
+    );
+  }
+
+  async function loadEvents(limit = 20) {
+    if (!actor.value) {
+      events.value = [];
+      return;
+    }
+
+    events.value = await api.getWorkspaceEvents(actor.value, { limit });
   }
 
   function getNotes(entityType: WorkspaceEntityType, entityId: string) {
@@ -106,26 +128,18 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
-  function addNote(entityType: WorkspaceEntityType, entityId: string, body: string) {
-    const author = authStore.currentUser;
-    const note: WorkspaceNote = {
-      id: createId('note'),
+  async function addNote(entityType: WorkspaceEntityType, entityId: string, body: string) {
+    if (!actor.value) {
+      return;
+    }
+
+    const created = await api.createWorkspaceNote(actor.value, {
       entityType,
       entityId,
       body: body.trim(),
-      authorName: author?.name ?? 'System',
-      authorRole: author?.role ?? 'admin',
-      createdAt: new Date().toISOString(),
-    };
-
-    notes.value.unshift(note);
-    persist();
-    recordEvent({
-      title: 'New note added',
-      description: note.body,
-      entityType,
-      entityId,
     });
+    notes.value.unshift(created);
+    await loadEvents();
   }
 
   function getTasks(entityType: WorkspaceEntityType, entityId: string) {
@@ -134,39 +148,45 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   }
 
-  function addTask(
+  async function addTask(
     entityType: WorkspaceEntityType,
     entityId: string,
     input: { title: string; dueDate: string; assigneeName?: string },
   ) {
-    const task: WorkspaceTask = {
-      id: createId('task'),
+    if (!actor.value) {
+      return;
+    }
+
+    const created = await api.createWorkspaceTask(actor.value, {
       entityType,
       entityId,
       title: input.title.trim(),
       dueDate: input.dueDate,
-      status: 'open',
-      assigneeName: input.assigneeName?.trim() || authStore.currentUser?.name || 'Unassigned',
-      createdAt: new Date().toISOString(),
-    };
-
-    tasks.value.unshift(task);
-    persist();
-    recordEvent({
-      title: 'Follow-up scheduled',
-      description: `${task.title} • due ${task.dueDate}`,
-      entityType,
-      entityId,
+      assigneeName: input.assigneeName?.trim() || undefined,
     });
+    tasks.value.unshift(created);
+    await loadEvents();
   }
 
-  function toggleTask(taskId: string) {
-    tasks.value = tasks.value.map((task) =>
-      task.id === taskId
-        ? { ...task, status: task.status === 'open' ? 'done' : 'open' }
-        : task,
+  async function toggleTask(taskId: string) {
+    if (!actor.value) {
+      return;
+    }
+
+    const existing = tasks.value.find((task) => task.id === taskId);
+
+    if (!existing) {
+      return;
+    }
+
+    const updated = await api.updateWorkspaceTaskStatus(
+      actor.value,
+      taskId,
+      existing.status === 'open' ? 'done' : 'open',
     );
-    persist();
+
+    tasks.value = tasks.value.map((task) => (task.id === taskId ? updated : task));
+    await loadEvents();
   }
 
   function getDocuments(entityType: WorkspaceEntityType, entityId: string) {
@@ -175,46 +195,42 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
-  function addDocumentPlaceholder(
+  async function addDocumentPlaceholder(
     entityType: WorkspaceEntityType,
     entityId: string,
     input: { name: string; type: WorkspaceDocument['type']; status: WorkspaceDocument['status'] },
   ) {
-    const doc: WorkspaceDocument = {
-      id: createId('doc'),
+    if (!actor.value) {
+      return;
+    }
+
+    const created = await api.createWorkspaceDocument(actor.value, {
       entityType,
       entityId,
       name: input.name.trim(),
       type: input.type,
       status: input.status,
-      createdAt: new Date().toISOString(),
-    };
-
-    documents.value.unshift(doc);
-    persist();
-    recordEvent({
-      title: 'Document placeholder added',
-      description: `${doc.name} • ${doc.status}`,
-      entityType,
-      entityId,
     });
+    documents.value.unshift(created);
+    await loadEvents();
   }
 
-  function updateDocumentStatus(documentId: string, status: WorkspaceDocument['status']) {
-    const target = documents.value.find((document) => document.id === documentId);
-
-    if (!target || target.status === status) {
+  async function updateDocumentStatus(documentId: string, status: WorkspaceDocument['status']) {
+    if (!actor.value) {
       return;
     }
 
-    target.status = status;
-    persist();
-    recordEvent({
-      title: 'Document status updated',
-      description: `${target.name} • ${status}`,
-      entityType: target.entityType,
-      entityId: target.entityId,
-    });
+    const existing = documents.value.find((document) => document.id === documentId);
+
+    if (!existing || existing.status === status) {
+      return;
+    }
+
+    const updated = await api.updateWorkspaceDocumentStatus(actor.value, documentId, status);
+    documents.value = documents.value.map((document) =>
+      document.id === documentId ? updated : document,
+    );
+    await loadEvents();
   }
 
   const recentEvents = computed(() =>
@@ -309,7 +325,11 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     documents,
     events,
     isHydrated,
+    isLoading,
+    errorMessage,
     hydrate,
+    loadEntityWorkspace,
+    loadEvents,
     getNotes,
     addNote,
     getTasks,
@@ -318,7 +338,6 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     getDocuments,
     addDocumentPlaceholder,
     updateDocumentStatus,
-    recordEvent,
     recentEvents,
     getCalendarItems,
     getAlerts,
