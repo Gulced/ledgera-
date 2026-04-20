@@ -12,6 +12,22 @@ export default defineNuxtConfig({
     },
   },
   vite: {
+    plugins: [
+      {
+        name: 'ledgera-fix-vue-router-devtools-null-instance',
+        enforce: 'pre',
+        transform(code, id) {
+          if (!id.includes('/vue-router/dist/vue-router.js')) {
+            return null;
+          }
+
+          return code.replace(
+            'instance.__vrv_devtools = info;',
+            'if (instance) instance.__vrv_devtools = info;',
+          );
+        },
+      },
+    ],
     optimizeDeps: {
       include: [
         'chart.js',

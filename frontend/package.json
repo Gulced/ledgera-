@@ -5,7 +5,7 @@
   "scripts": {
     "build": "nuxi cleanup && nuxt build",
     "clean": "nuxi cleanup",
-    "dev": "nuxt dev --host 127.0.0.1 --port 3003",
+    "dev": "nuxi cleanup && nuxt dev --host 127.0.0.1 --port 3003",
     "generate": "nuxt generate",
     "preview": "nuxt preview --host 127.0.0.1 --port 3003",
     "postinstall": "nuxt prepare"
