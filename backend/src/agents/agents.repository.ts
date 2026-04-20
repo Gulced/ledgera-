@@ -1,0 +1,7 @@
+import type { AgentDto } from './dto/agent.dto';
+
+export abstract class AgentsRepository {
+  abstract findAll(): Promise<AgentDto[]>;
+  abstract findById(id: string): Promise<AgentDto | null>;
+  abstract create(agent: AgentDto): Promise<AgentDto>;
+}

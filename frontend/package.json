@@ -1,0 +1,25 @@
+{
+  "name": "frontend",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxi cleanup && nuxt build",
+    "clean": "nuxi cleanup",
+    "dev": "nuxt dev --host 127.0.0.1 --port 3003",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview --host 127.0.0.1 --port 3003",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^0.11.3",
+    "chart.js": "^4.5.1",
+    "date-fns": "^4.1.0",
+    "nuxt": "^4.4.2",
+    "ol": "^10.9.0",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.32",
+    "vue-chartjs": "^5.3.3",
+    "vue-router": "^5.0.4",
+    "zod": "^4.3.6"
+  }
+}
