@@ -16,7 +16,8 @@ const isSubmitting = ref(false);
 const errorMessage = ref('');
 const healthChecked = ref(false);
 const backendAvailable = ref(true);
-const showBackendBanner = ref(false);
+const backendHealthReason = ref<'ok' | 'bad_status' | 'network_error' | null>(null);
+let healthPollTimer: ReturnType<typeof setInterval> | null = null;
 
 const loginForm = reactive({
   email: '',
@@ -36,17 +37,37 @@ const demoCredentials = [
   { role: 'agent', email: 'agent@ledgera.com', password: 'demo123' },
 ] satisfies Array<{ role: UserRole; email: string; password: string }>;
 
+async function runHealthProbe() {
+  const health = await api.checkBackendHealth();
+  backendAvailable.value = health.available;
+  backendHealthReason.value = health.reason;
+  healthChecked.value = true;
+
+  if (health.available && healthPollTimer) {
+    clearInterval(healthPollTimer);
+    healthPollTimer = null;
+  }
+}
+
 onMounted(() => {
   if (authStore.currentUser) {
     void router.replace('/');
   }
 
-  void (async () => {
-    const health = await api.checkBackendHealth();
-    backendAvailable.value = health.available;
-    showBackendBanner.value = health.showBanner;
-    healthChecked.value = true;
-  })();
+  void runHealthProbe();
+
+  healthPollTimer = setInterval(() => {
+    if (!backendAvailable.value) {
+      void runHealthProbe();
+    }
+  }, 10000);
+});
+
+onBeforeUnmount(() => {
+  if (healthPollTimer) {
+    clearInterval(healthPollTimer);
+    healthPollTimer = null;
+  }
 });
 
 async function submitLogin() {
@@ -134,7 +155,10 @@ async function submitLogin() {
         </div>
 
         <div class="auth-form-card">
-          <p v-if="healthChecked && !backendAvailable && showBackendBanner" class="inline-error auth-inline-error">
+          <p
+            v-if="healthChecked && !backendAvailable && backendHealthReason !== 'ok'"
+            class="inline-error auth-inline-error"
+          >
             Backend is unreachable. Make sure the API is running at {{ config.public.healthUrl || config.public.apiBase }}.
           </p>
 

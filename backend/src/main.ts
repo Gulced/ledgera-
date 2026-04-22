@@ -12,6 +12,7 @@ async function bootstrap() {
   const configuredOrigins = process.env.CORS_ORIGINS?.split(',')
     .map((origin) => origin.trim())
     .filter(Boolean) ?? [];
+  const exactConfiguredOrigins = new Set(configuredOrigins);
   const defaultOrigins = [
     'http://localhost:3001',
     'http://127.0.0.1:3001',
@@ -24,9 +25,28 @@ async function bootstrap() {
     'http://localhost:3000',
     'http://127.0.0.1:3000',
   ];
+  const exactAllowedOrigins = new Set([...defaultOrigins, ...configuredOrigins]);
+  const wildcardOriginPatterns = [/^https:\/\/.*\.vercel\.app$/];
 
   app.enableCors({
-    origin: [...new Set([...defaultOrigins, ...configuredOrigins])],
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (exactAllowedOrigins.has(origin) || wildcardOriginPatterns.some((pattern) => pattern.test(origin))) {
+        callback(null, true);
+        return;
+      }
+
+      if (exactConfiguredOrigins.has(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin ${origin} is not allowed by CORS.`), false);
+    },
     credentials: true,
   });
   app.useGlobalPipes(

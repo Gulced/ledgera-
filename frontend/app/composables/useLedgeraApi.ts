@@ -68,24 +68,31 @@ export function useLedgeraApi() {
           signal: controller.signal,
           credentials: 'omit',
           cache: 'no-store',
+          mode: 'cors',
         });
 
         clearTimeout(timeout);
 
         if (!response.ok) {
-          return { available: false, showBanner: false };
+          return {
+            available: false,
+            reason: 'bad_status' as const,
+            statusCode: response.status,
+          };
         }
 
         const data = (await response.json()) as { status?: string };
         return {
           available: data.status === 'ok',
-          showBanner: false,
+          reason: data.status === 'ok' ? ('ok' as const) : ('bad_status' as const),
+          statusCode: response.status,
         };
       } catch {
         if (attempt === 2) {
           return {
             available: false,
-            showBanner: true,
+            reason: 'network_error' as const,
+            statusCode: null,
           };
         }
 
@@ -95,7 +102,8 @@ export function useLedgeraApi() {
 
     return {
       available: false,
-      showBanner: true,
+      reason: 'network_error' as const,
+      statusCode: null,
     };
   }
 
