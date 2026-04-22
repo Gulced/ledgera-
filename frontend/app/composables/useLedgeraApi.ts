@@ -52,6 +52,46 @@ function cleanQuery(filters: Partial<TransactionFilters>) {
   );
 }
 
+function getApiError(error: unknown) {
+  const candidate = error as {
+    data?: ApiError;
+    response?: { _data?: ApiError };
+    status?: number;
+    statusCode?: number;
+    statusMessage?: string;
+    message?: string;
+  };
+
+  const envelope = candidate.data?.error ?? candidate.response?._data?.error;
+
+  if (envelope) {
+    return {
+      statusCode: envelope.statusCode,
+      message: envelope.message,
+      data: envelope,
+    };
+  }
+
+  const statusCode = candidate.statusCode ?? candidate.status;
+
+  if (statusCode) {
+    return {
+      statusCode,
+      message:
+        candidate.statusMessage ??
+        candidate.message ??
+        'The backend rejected this request.',
+      data: undefined,
+    };
+  }
+
+  return {
+    statusCode: 503,
+    message: undefined,
+    data: undefined,
+  };
+}
+
 export function useLedgeraApi() {
   const config = useRuntimeConfig();
 
@@ -131,14 +171,15 @@ export function useLedgeraApi() {
 
       return response.data;
     } catch (error) {
-      const apiError = error as { data?: ApiError };
-      const fallbackMessage = apiError.data?.error.message
-        ?? `Backend is unreachable. Make sure the API is running at ${config.public.apiBase}.`;
+      const apiError = getApiError(error);
+      const fallbackMessage =
+        apiError.message ??
+        `Backend is unreachable. Make sure the API is running at ${config.public.apiBase}.`;
 
       throw createError({
-        statusCode: apiError.data?.error.statusCode ?? 500,
+        statusCode: apiError.statusCode,
         statusMessage: fallbackMessage,
-        data: apiError.data?.error,
+        data: apiError.data,
       });
     }
   }
@@ -165,14 +206,15 @@ export function useLedgeraApi() {
 
         return response.data;
       } catch (error) {
-        const apiError = error as { data?: ApiError };
-        const fallbackMessage = apiError.data?.error.message
-          ?? `Backend is unreachable. Make sure the API is running at ${config.public.apiBase}.`;
+        const apiError = getApiError(error);
+        const fallbackMessage =
+          apiError.message ??
+          `Backend is unreachable. Make sure the API is running at ${config.public.apiBase}.`;
 
         throw createError({
-          statusCode: apiError.data?.error.statusCode ?? 500,
+          statusCode: apiError.statusCode,
           statusMessage: fallbackMessage,
-          data: apiError.data?.error,
+          data: apiError.data,
         });
       }
     },
@@ -381,14 +423,15 @@ export function useLedgeraApi() {
 
         return response.data;
       } catch (error) {
-        const apiError = error as { data?: ApiError };
-        const fallbackMessage = apiError.data?.error.message
-          ?? `Backend is unreachable. Make sure the API is running at ${config.public.apiBase}.`;
+        const apiError = getApiError(error);
+        const fallbackMessage =
+          apiError.message ??
+          `Backend is unreachable. Make sure the API is running at ${config.public.apiBase}.`;
 
         throw createError({
-          statusCode: apiError.data?.error.statusCode ?? 500,
+          statusCode: apiError.statusCode,
           statusMessage: fallbackMessage,
-          data: apiError.data?.error,
+          data: apiError.data,
         });
       }
     },

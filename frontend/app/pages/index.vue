@@ -39,7 +39,7 @@ async function loadAdminListings() {
 }
 
 async function loadDashboardWorkspace() {
-  await Promise.all([
+  await Promise.allSettled([
     store.loadAgents(),
     store.loadDashboard(),
     store.loadListings(),
