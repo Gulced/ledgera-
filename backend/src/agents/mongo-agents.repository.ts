@@ -31,6 +31,15 @@ export class MongoAgentsRepository implements AgentsRepository {
     return document ? this.stripMongoFields(document) : null;
   }
 
+  async findByEmail(email: string): Promise<AgentDto | null> {
+    const document = await this.agentModel
+      .findOne({ email: email.trim().toLowerCase() })
+      .lean<AgentDto | null>()
+      .exec();
+
+    return document ? this.stripMongoFields(document) : null;
+  }
+
   async create(agent: AgentDto): Promise<AgentDto> {
     const created = await this.agentModel.create(agent);
 

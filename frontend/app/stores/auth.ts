@@ -58,6 +58,19 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       accounts.value = await api.getUsers(actor);
+      const refreshedSession = accounts.value.find(
+        (account) => account.email === currentUser.value?.email,
+      );
+
+      if (refreshedSession) {
+        persistSession({
+          id: refreshedSession.id,
+          name: refreshedSession.name,
+          email: refreshedSession.email,
+          role: refreshedSession.role,
+          linkedAgentId: refreshedSession.linkedAgentId,
+        });
+      }
     } catch {
       accounts.value = [];
     }

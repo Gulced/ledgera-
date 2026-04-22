@@ -29,7 +29,11 @@ export class UsersService implements OnModuleInit {
 
   async findAll(): Promise<UserDto[]> {
     const users = await this.usersRepository.findAll();
-    return users.map((user) => this.sanitize(user));
+    const repairedUsers = await Promise.all(
+      users.map((user) => this.ensureAgentAccountLinked(user)),
+    );
+
+    return repairedUsers.map((user) => this.sanitize(user));
   }
 
   async create(payload: CreateUserDto): Promise<UserDto> {
@@ -73,7 +77,7 @@ export class UsersService implements OnModuleInit {
   async login(payload: LoginUserDto): Promise<UserDto> {
     const normalizedEmail = payload.email.trim().toLowerCase();
     await this.emailValidationService.assertValidEmail(normalizedEmail, 'login email');
-    const account = await this.usersRepository.findByEmail(normalizedEmail);
+    let account = await this.usersRepository.findByEmail(normalizedEmail);
 
     if (!account || account.password !== payload.password) {
       throw new AppUnauthorizedException(
@@ -81,6 +85,8 @@ export class UsersService implements OnModuleInit {
         'No matching account was found for this email and password.',
       );
     }
+
+    account = await this.ensureAgentAccountLinked(account);
 
     return this.sanitize(account);
   }
@@ -92,6 +98,37 @@ export class UsersService implements OnModuleInit {
 
   private createUserId(role: UserDto['role']) {
     return `${role.slice(0, 3)}_${randomUUID().slice(0, 8)}`;
+  }
+
+  private async ensureAgentAccountLinked(account: UserAccountDto) {
+    if (account.role !== 'agent') {
+      return account;
+    }
+
+    if (account.linkedAgentId) {
+      try {
+        await this.agentsService.findActiveById(account.linkedAgentId);
+        return account;
+      } catch {
+        // Fall through and try to repair the account from the agent email.
+      }
+    }
+
+    const linkedAgent = await this.agentsService.findByEmail(account.email);
+
+    if (!linkedAgent || !linkedAgent.isActive) {
+      return account;
+    }
+
+    const repairedAccount: UserAccountDto = {
+      ...account,
+      id: linkedAgent.id,
+      linkedAgentId: linkedAgent.id,
+      name: linkedAgent.name,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return this.usersRepository.update(account.email, repairedAccount);
   }
 
   private async ensureDefaultUsers() {

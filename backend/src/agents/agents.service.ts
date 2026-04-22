@@ -46,6 +46,10 @@ export class AgentsService {
     return agent;
   }
 
+  async findByEmail(email: string): Promise<AgentDto | null> {
+    return this.agentsRepository.findByEmail(email);
+  }
+
   async findActiveById(id: string): Promise<AgentDto> {
     const agent = await this.findById(id);
 

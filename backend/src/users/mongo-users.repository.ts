@@ -41,6 +41,22 @@ export class MongoUsersRepository implements UsersRepository {
     );
   }
 
+  async update(email: string, user: UserAccountDto): Promise<UserAccountDto> {
+    const updated = await this.userModel
+      .findOneAndReplace({ email: email.trim().toLowerCase() }, user, {
+        new: true,
+        upsert: false,
+      })
+      .lean<UserAccountDto | null>()
+      .exec();
+
+    if (!updated) {
+      throw new Error(`User ${email} could not be updated.`);
+    }
+
+    return this.stripMongoFields(updated);
+  }
+
   private stripMongoFields(document: UserAccountDto & { _id?: unknown }) {
     const { _id, ...user } = document;
 

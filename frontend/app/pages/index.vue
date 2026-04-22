@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
+import { useAuthStore } from '~/stores/auth';
 import { useDashboardStore } from '~/stores/dashboard';
 import { useWorkspaceStore } from '~/stores/workspace';
 import type { Listing } from '~/types/api';
 
 const store = useDashboardStore();
 const workspace = useWorkspaceStore();
+const authStore = useAuthStore();
 const { errorMessage, filters, isLoading, successMessage, summary, transactions } = storeToRefs(store);
 const api = useLedgeraApi();
 const canManageAgents = computed(() => store.activeRole === 'admin');
@@ -39,6 +41,8 @@ async function loadAdminListings() {
 }
 
 async function loadDashboardWorkspace() {
+  await authStore.loadAccounts();
+
   await Promise.allSettled([
     store.loadAgents(),
     store.loadDashboard(),
