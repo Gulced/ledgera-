@@ -129,7 +129,9 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
       if (summaryResult.status === 'rejected' || transactionsResult.status === 'rejected') {
         errorMessage.value =
-          'Some dashboard data could not be loaded for this role. Empty sections are shown instead.';
+          activeRole.value === 'agent'
+            ? ''
+            : 'Some dashboard data could not be loaded for this role. Empty sections are shown instead.';
       }
     } finally {
       isLoading.value = false;
@@ -151,7 +153,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       listings.value = [];
       errorMessage.value =
         activeRole.value === 'agent'
-          ? 'No listing data could be loaded for this agent yet.'
+          ? ''
           : appError.statusMessage ?? 'An error occurred while loading listing data.';
     } finally {
       isLoading.value = false;
