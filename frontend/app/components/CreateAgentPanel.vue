@@ -11,6 +11,7 @@ const form = reactive({
   email: '',
   phone: '',
   isActive: true,
+  accountPassword: '',
 });
 
 const validationError = ref('');
@@ -20,6 +21,7 @@ const schema = z.object({
   email: z.string().trim().or(z.literal('')),
   phone: z.string().optional(),
   isActive: z.boolean(),
+  accountPassword: z.string().optional(),
 });
 
 async function submit() {
@@ -31,15 +33,27 @@ async function submit() {
     return;
   }
 
+  if (parsed.data.accountPassword?.trim() && !parsed.data.email.trim()) {
+    validationError.value = 'Email is required if you want to create a login for the agent.';
+    return;
+  }
+
+  if (parsed.data.accountPassword?.trim() && parsed.data.accountPassword.trim().length < 6) {
+    validationError.value = 'Agent login password must be at least 6 characters.';
+    return;
+  }
+
   await store.createAgent({
     ...parsed.data,
     email: parsed.data.email || undefined,
+    accountPassword: parsed.data.accountPassword?.trim() || undefined,
   });
 
   form.name = '';
   form.email = '';
   form.phone = '';
   form.isActive = true;
+  form.accountPassword = '';
 }
 </script>
 
@@ -65,6 +79,14 @@ async function submit() {
         <span>Phone</span>
         <input v-model="form.phone" type="text" placeholder="+90 555 111 2233">
       </label>
+      <label>
+        <span>Login Password</span>
+        <input
+          v-model="form.accountPassword"
+          type="password"
+          placeholder="Optional: create a login for this agent"
+        >
+      </label>
       <label class="checkbox-field">
         <input v-model="form.isActive" type="checkbox">
         <span>Agent is active</span>
@@ -77,6 +99,10 @@ async function submit() {
 
     <p v-if="validationError" class="inline-error">
       {{ validationError }}
+    </p>
+    <p class="helper-copy">
+      Leave password empty to create only the agent profile. Add a password to create the linked
+      agent login account at the same time.
     </p>
   </section>
 </template>

@@ -125,6 +125,10 @@ export function useLedgeraApi() {
         headers: buildHeaders(options.actor),
       });
 
+      if (response === undefined || response === null) {
+        return null as T;
+      }
+
       return response.data;
     } catch (error) {
       const apiError = error as { data?: ApiError };

@@ -189,9 +189,30 @@ export const useDashboardStore = defineStore('dashboard', () => {
     successMessage.value = '';
 
     try {
-      const created = await api.createAgent(actor.value, input);
+      const { accountPassword, ...agentPayload } = input;
+      const created = await api.createAgent(actor.value, agentPayload);
+
+      if (accountPassword?.trim()) {
+        if (!created.email) {
+          throw createError({
+            statusCode: 400,
+            statusMessage: 'An email address is required to create an agent login.',
+          });
+        }
+
+        await authStore.createAccount({
+          role: 'agent',
+          name: created.name,
+          email: created.email,
+          password: accountPassword.trim(),
+          linkedAgentId: created.id,
+        });
+      }
+
       await loadAgents();
-      successMessage.value = `Agent created. ID: ${created.id}`;
+      successMessage.value = accountPassword?.trim()
+        ? `Agent and login account created. ID: ${created.id}`
+        : `Agent created. ID: ${created.id}`;
     } catch (error) {
       const appError = error as { statusMessage?: string };
       errorMessage.value =

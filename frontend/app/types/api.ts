@@ -185,6 +185,7 @@ export interface CreateAgentInput {
   email?: string;
   phone?: string;
   isActive?: boolean;
+  accountPassword?: string;
 }
 
 export interface UpdateAgentInput extends CreateAgentInput {
