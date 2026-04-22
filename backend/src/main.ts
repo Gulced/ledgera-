@@ -12,8 +12,10 @@ async function bootstrap() {
   const configuredOrigins = process.env.CORS_ORIGINS?.split(',')
     .map((origin) => origin.trim())
     .filter(Boolean) ?? [];
-  const exactConfiguredOrigins = new Set(configuredOrigins);
+  const normalizeOrigin = (origin: string) => origin.replace(/\/$/, '');
+  const exactConfiguredOrigins = new Set(configuredOrigins.map(normalizeOrigin));
   const defaultOrigins = [
+    'https://ledgera-five.vercel.app',
     'http://localhost:3001',
     'http://127.0.0.1:3001',
     'http://localhost:3002',
@@ -25,8 +27,7 @@ async function bootstrap() {
     'http://localhost:3000',
     'http://127.0.0.1:3000',
   ];
-  const exactAllowedOrigins = new Set([...defaultOrigins, ...configuredOrigins]);
-  const wildcardOriginPatterns = [/^https:\/\/.*\.vercel\.app$/];
+  const exactAllowedOrigins = new Set([...defaultOrigins, ...configuredOrigins].map(normalizeOrigin));
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -35,12 +36,14 @@ async function bootstrap() {
         return;
       }
 
-      if (exactAllowedOrigins.has(origin) || wildcardOriginPatterns.some((pattern) => pattern.test(origin))) {
+      const normalizedOrigin = normalizeOrigin(origin);
+
+      if (exactAllowedOrigins.has(normalizedOrigin)) {
         callback(null, true);
         return;
       }
 
-      if (exactConfiguredOrigins.has(origin)) {
+      if (exactConfiguredOrigins.has(normalizedOrigin)) {
         callback(null, true);
         return;
       }
