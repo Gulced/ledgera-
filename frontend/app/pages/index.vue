@@ -51,24 +51,24 @@ await loadAdminListings();
 <template>
   <AppShell>
     <div class="dashboard-grid">
-      <section class="workspace-hero panel">
+      <section class="workspace-hero panel rounded-[34px] border border-white/70 bg-white/80 px-8 py-8 shadow-[0_24px_60px_rgba(31,41,55,0.08)] backdrop-blur-xl">
         <div class="workspace-hero__copy">
-          <p class="eyebrow">Daily Snapshot</p>
-          <h2>Keep listings, transactions, and revenue signals in one calm operating view.</h2>
-          <p>
+          <p class="eyebrow text-[0.72rem] font-semibold uppercase tracking-[0.32em] text-slate-400">Daily Snapshot</p>
+          <h2 class="max-w-3xl text-balance text-3xl font-semibold leading-[1.02] tracking-tight text-slate-900">Keep listings, transactions, and revenue signals in one calm operating view.</h2>
+          <p class="mt-4 max-w-3xl text-base leading-8 text-slate-500">
             This dashboard is designed for fast scanning: open deals, payout exposure, stage density,
             and operational actions all stay visible without losing financial context.
           </p>
         </div>
 
-        <div class="workspace-hero__metrics">
-          <div>
-            <span>Workspace Mode</span>
-            <strong>{{ store.activeRole }}</strong>
+        <div class="workspace-hero__metrics grid gap-4 md:grid-cols-2">
+          <div class="rounded-[26px] border border-slate-200/80 bg-white px-6 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+            <span class="text-sm text-slate-400">Workspace Mode</span>
+            <strong class="mt-3 block text-4xl font-semibold tracking-tight text-slate-900">{{ store.activeRole }}</strong>
           </div>
-          <div>
-            <span>Live Transactions</span>
-            <strong>{{ summary?.totals.transactions || 0 }}</strong>
+          <div class="rounded-[26px] border border-slate-200/80 bg-white px-6 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+            <span class="text-sm text-slate-400">Live Transactions</span>
+            <strong class="mt-3 block text-4xl font-semibold tracking-tight text-slate-900">{{ summary?.totals.transactions || 0 }}</strong>
           </div>
         </div>
       </section>
@@ -83,15 +83,15 @@ await loadAdminListings();
         {{ successMessage }}
       </div>
 
-      <section v-if="isAdmin" class="panel">
+      <section v-if="isAdmin" class="panel rounded-[34px] border border-white/70 bg-white/80 px-8 py-8 shadow-[0_24px_60px_rgba(31,41,55,0.08)] backdrop-blur-xl">
         <div class="panel__header">
           <div>
-            <p class="eyebrow">Admin Overview</p>
-            <h2>Listing map by full address</h2>
+            <p class="eyebrow text-[0.72rem] font-semibold uppercase tracking-[0.32em] text-slate-400">Admin Overview</p>
+            <h2 class="text-3xl font-semibold tracking-tight text-slate-900">Listing map by full address</h2>
           </div>
         </div>
 
-        <p class="helper-copy helper-copy--compact">
+        <p class="helper-copy helper-copy--compact mt-3 max-w-3xl text-sm leading-7 text-slate-500">
           Click a marker to open that listing detail. Marker placement uses the saved full address
           within the selected city footprint.
         </p>

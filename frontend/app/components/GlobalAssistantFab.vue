@@ -2,7 +2,9 @@
 import { storeToRefs } from 'pinia';
 import { useAgentAssistantContext } from '~/composables/useAgentAssistantContext';
 import { useDashboardStore } from '~/stores/dashboard';
+import { useWorkspaceStore } from '~/stores/workspace';
 import type {
+  AssistantProposedAction,
   AssistantPageType,
   AssistantResponse,
   Listing,
@@ -13,6 +15,7 @@ import type {
 const api = useLedgeraApi();
 const route = useRoute();
 const store = useDashboardStore();
+const workspaceStore = useWorkspaceStore();
 const agentAssistantContext = useAgentAssistantContext();
 const { actor, filters, listingFilters, listings, summary, transactions } = storeToRefs(store);
 
@@ -29,8 +32,11 @@ const messages = ref<Array<{
   body: string;
   tone?: 'error' | 'muted';
   source?: AssistantResponse['source'];
+  proposedActions?: AssistantProposedAction[];
+  appliedActionIds?: string[];
 }>>([]);
 const chatBody = ref<HTMLElement | null>(null);
+const executingActionIds = ref<string[]>([]);
 
 const contextEntityId = computed(() => {
   if (pageType.value === 'listing_detail' || pageType.value === 'transaction_detail') {
@@ -386,6 +392,8 @@ async function askAssistant(customPrompt?: string) {
       role: 'assistant',
       body: response.response,
       source: response.source,
+      proposedActions: response.proposedActions,
+      appliedActionIds: [],
     });
   } catch (error) {
     const appError = error as { statusMessage?: string; message?: string };
@@ -402,6 +410,73 @@ async function askAssistant(customPrompt?: string) {
     });
   } finally {
     isLoading.value = false;
+  }
+}
+
+function isActionApplied(message: { appliedActionIds?: string[] }, actionId: string) {
+  return message.appliedActionIds?.includes(actionId) ?? false;
+}
+
+function isActionExecuting(actionId: string) {
+  return executingActionIds.value.includes(actionId);
+}
+
+async function applyAssistantAction(messageId: string, action: AssistantProposedAction) {
+  if (isActionExecuting(action.id)) {
+    return;
+  }
+
+  executingActionIds.value = [...executingActionIds.value, action.id];
+  errorMessage.value = '';
+
+  try {
+    if (action.kind === 'create_note') {
+      await workspaceStore.addNote(action.entityType, action.entityId, action.body);
+    } else if (action.kind === 'create_task') {
+      await workspaceStore.addTask(action.entityType, action.entityId, {
+        title: action.title,
+        dueDate: action.dueDate,
+        assigneeName: action.assigneeName,
+      });
+    } else if (action.kind === 'update_listing_status') {
+      const updated = await store.updateListingStatus(action.entityId, action.status);
+      if (currentListing.value?.id === action.entityId) {
+        currentListing.value = updated;
+      }
+    }
+
+    messages.value = messages.value.map((message) => {
+      if (message.id !== messageId) {
+        return message;
+      }
+
+      return {
+        ...message,
+        appliedActionIds: [...(message.appliedActionIds ?? []), action.id],
+      };
+    });
+
+    messages.value.push({
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      body: `Action applied: ${action.label}.`,
+      source: 'fallback',
+      tone: 'muted',
+    });
+  } catch (error) {
+    const appError = error as { statusMessage?: string; message?: string };
+    errorMessage.value =
+      appError.statusMessage ??
+      appError.message ??
+      'The suggested action could not be applied.';
+    messages.value.push({
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      body: errorMessage.value,
+      tone: 'error',
+    });
+  } finally {
+    executingActionIds.value = executingActionIds.value.filter((id) => id !== action.id);
   }
 }
 
@@ -433,31 +508,31 @@ onMounted(() => {
 
 <template>
   <div class="assistant-fab-shell">
-    <button class="assistant-fab" type="button" @click="isOpen = !isOpen">
+    <button class="assistant-fab inline-flex min-h-[54px] min-w-[118px] items-center justify-center rounded-full bg-[linear-gradient(135deg,#241b67,#d06a51)] px-6 text-sm font-semibold text-white shadow-[0_20px_45px_rgba(36,27,103,0.28)] transition hover:-translate-y-1 hover:shadow-[0_28px_52px_rgba(36,27,103,0.34)]" type="button" @click="isOpen = !isOpen">
       {{ isOpen ? 'Close AI' : 'Ask AI' }}
     </button>
 
-    <aside v-if="isOpen" class="assistant-drawer panel">
-      <div class="panel__header">
+    <aside v-if="isOpen" class="assistant-drawer panel rounded-[30px] border border-white/70 bg-white/85 p-6 shadow-[0_28px_70px_rgba(15,23,42,0.16)] backdrop-blur-xl">
+      <div class="panel__header flex items-start justify-between gap-4">
         <div>
-          <p class="eyebrow">Workspace AI</p>
-          <h2>{{ pageTitle }}</h2>
+          <p class="eyebrow text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-slate-400">Workspace AI</p>
+          <h2 class="text-2xl font-semibold tracking-tight text-slate-900">{{ pageTitle }}</h2>
         </div>
-        <button class="ghost-button ghost-button--small" type="button" @click="isOpen = false">
+        <button class="ghost-button ghost-button--small inline-flex min-h-[42px] items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900" type="button" @click="isOpen = false">
           Close
         </button>
       </div>
 
-      <p class="helper-copy helper-copy--compact">
+      <p class="helper-copy helper-copy--compact mt-3 text-sm leading-7 text-slate-500">
         Ready questions adapt to the current page.
       </p>
 
-      <div class="assistant-suggestions">
+      <div class="assistant-suggestions mt-5 flex flex-wrap gap-3">
         <button
           v-for="item in suggestedPrompts"
           :key="item"
           type="button"
-          class="ghost-button assistant-suggestion"
+          class="ghost-button assistant-suggestion rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-medium text-slate-700 shadow-[0_10px_26px_rgba(31,41,55,0.05)] transition hover:-translate-y-0.5 hover:border-violet-200 hover:text-slate-900"
           :disabled="isLoading || contextLoading"
           @click="askAssistant(item)"
         >
@@ -484,6 +559,35 @@ onMounted(() => {
               </span>
             </div>
             <pre class="assistant-result__body">{{ message.body }}</pre>
+            <div
+              v-if="message.role === 'assistant' && message.proposedActions?.length"
+              class="assistant-action-list"
+            >
+              <article
+                v-for="action in message.proposedActions"
+                :key="action.id"
+                class="assistant-action-card"
+              >
+                <div class="assistant-action-card__copy">
+                  <strong>{{ action.label }}</strong>
+                  <p>{{ action.description }}</p>
+                </div>
+                <button
+                  class="ghost-button ghost-button--small"
+                  type="button"
+                  :disabled="isActionExecuting(action.id) || isActionApplied(message, action.id)"
+                  @click="applyAssistantAction(message.id, action)"
+                >
+                  {{
+                    isActionApplied(message, action.id)
+                      ? 'Applied'
+                      : isActionExecuting(action.id)
+                        ? 'Applying...'
+                        : 'Confirm action'
+                  }}
+                </button>
+              </article>
+            </div>
           </article>
         </div>
         <div v-else class="assistant-chat assistant-chat--empty">
@@ -494,17 +598,18 @@ onMounted(() => {
         </div>
       </div>
 
-      <label class="assistant-field">
-        <span>Your question</span>
+      <label class="assistant-field mt-5 grid gap-2.5">
+        <span class="text-sm font-medium text-slate-600">Your question</span>
         <textarea
           v-model="prompt"
           rows="4"
           placeholder="Ask anything based on the content of this page."
+          class="min-h-[128px] rounded-[24px] border border-slate-200 bg-white px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
         />
       </label>
 
-      <div class="preview-actions">
-        <button class="primary-button" type="button" :disabled="isLoading || contextLoading || !prompt.trim()" @click="askAssistant()">
+      <div class="preview-actions mt-5">
+        <button class="primary-button inline-flex min-h-[54px] items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#3b2f95,#6d5efc)] px-5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(99,102,241,0.28)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" type="button" :disabled="isLoading || contextLoading || !prompt.trim()" @click="askAssistant()">
           {{ isLoading ? 'Thinking...' : 'Send' }}
         </button>
       </div>

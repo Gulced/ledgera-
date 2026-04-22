@@ -93,53 +93,53 @@ async function handleTransactionDeleted() {
         {{ successMessage }}
       </div>
 
-      <section class="panel detail-hero">
-        <div class="detail-hero__heading">
+      <section class="panel detail-hero rounded-[34px] border border-white/70 bg-white/85 px-8 py-8 shadow-[0_24px_60px_rgba(31,41,55,0.08)] backdrop-blur-xl">
+        <div class="detail-hero__heading flex items-start justify-between gap-4">
           <div>
-            <p class="eyebrow">Transaction Detail</p>
-            <h2>{{ transaction.propertyRef }}</h2>
+            <p class="eyebrow text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-slate-400">Transaction Detail</p>
+            <h2 class="max-w-3xl text-balance text-3xl font-semibold leading-[1.02] tracking-tight text-slate-900">{{ transaction.propertyRef }}</h2>
           </div>
-          <span class="stage-badge" :data-stage="transaction.stage">
+          <span class="stage-badge inline-flex min-h-[44px] items-center rounded-full px-4 text-sm font-semibold" :data-stage="transaction.stage">
             {{ titleCaseStage(transaction.stage) }}
           </span>
         </div>
 
-        <div class="detail-stats">
-          <div>
-            <span>Total Service Fee</span>
-            <strong>{{ formatMoney(transaction.totalServiceFee, transaction.currency) }}</strong>
+        <div class="detail-stats mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div class="rounded-[24px] border border-slate-200/80 bg-white px-5 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+            <span class="text-sm text-slate-400">Total Service Fee</span>
+            <strong class="mt-3 block text-3xl font-semibold tracking-tight text-slate-900">{{ formatMoney(transaction.totalServiceFee, transaction.currency) }}</strong>
           </div>
-          <div>
-            <span>Agency Share</span>
-            <strong>{{ formatMoney(transaction.commission.agencyShare, transaction.currency) }}</strong>
+          <div class="rounded-[24px] border border-slate-200/80 bg-white px-5 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+            <span class="text-sm text-slate-400">Agency Share</span>
+            <strong class="mt-3 block text-3xl font-semibold tracking-tight text-slate-900">{{ formatMoney(transaction.commission.agencyShare, transaction.currency) }}</strong>
           </div>
-          <div>
-            <span>Financial Lock</span>
-            <strong>{{ transaction.financialIntegrity.isLocked ? 'Locked' : 'Open' }}</strong>
+          <div class="rounded-[24px] border border-slate-200/80 bg-white px-5 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+            <span class="text-sm text-slate-400">Financial Lock</span>
+            <strong class="mt-3 block text-3xl font-semibold tracking-tight text-slate-900">{{ transaction.financialIntegrity.isLocked ? 'Locked' : 'Open' }}</strong>
           </div>
-          <div>
-            <span>Updated At</span>
-            <strong>{{ formatDate(transaction.updatedAt) }}</strong>
+          <div class="rounded-[24px] border border-slate-200/80 bg-white px-5 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+            <span class="text-sm text-slate-400">Updated At</span>
+            <strong class="mt-3 block text-3xl font-semibold tracking-tight text-slate-900">{{ formatDate(transaction.updatedAt) }}</strong>
           </div>
         </div>
 
-        <div class="detail-agents">
-          <div>
-            <span>Listing Agent</span>
-            <strong>{{ transaction.listingAgent.name }}</strong>
+        <div class="detail-agents mt-6 grid gap-4 md:grid-cols-2">
+          <div class="rounded-[24px] border border-slate-200/80 bg-white px-5 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+            <span class="text-sm text-slate-400">Listing Agent</span>
+            <strong class="mt-3 block text-xl font-semibold tracking-tight text-slate-900">{{ transaction.listingAgent.name }}</strong>
           </div>
-          <div>
-            <span>Selling Agent</span>
-            <strong>{{ transaction.sellingAgent.name }}</strong>
+          <div class="rounded-[24px] border border-slate-200/80 bg-white px-5 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+            <span class="text-sm text-slate-400">Selling Agent</span>
+            <strong class="mt-3 block text-xl font-semibold tracking-tight text-slate-900">{{ transaction.sellingAgent.name }}</strong>
           </div>
         </div>
       </section>
 
-      <section class="panel detail-map-panel">
+      <section class="panel detail-map-panel rounded-[30px] border border-white/70 bg-white/85 p-7 shadow-[0_22px_52px_rgba(31,41,55,0.08)] backdrop-blur-xl">
         <div class="panel__header">
           <div>
-            <p class="eyebrow">Location</p>
-            <h2>Property map preview</h2>
+            <p class="eyebrow text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-slate-400">Location</p>
+            <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Property map preview</h2>
           </div>
         </div>
 
@@ -209,27 +209,27 @@ async function handleTransactionDeleted() {
         @deleted="handleTransactionDeleted"
       />
 
-      <section class="panel">
+      <section class="panel rounded-[30px] border border-white/70 bg-white/85 p-7 shadow-[0_22px_52px_rgba(31,41,55,0.08)] backdrop-blur-xl">
         <div class="panel__header">
           <div>
-            <p class="eyebrow">Commission</p>
-            <h2>Explainable payout breakdown</h2>
+            <p class="eyebrow text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-slate-400">Commission</p>
+            <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Explainable payout breakdown</h2>
           </div>
         </div>
 
-        <div class="payout-grid">
+        <div class="payout-grid mt-6 grid gap-4 md:grid-cols-2">
           <div
             v-for="payout in transaction.commission.payouts"
             :key="`${payout.agentId}-${payout.reason}`"
-            class="payout-card"
+            class="payout-card rounded-[24px] border border-slate-200/80 bg-white px-5 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]"
           >
-            <span>{{ payout.agentName }}</span>
-            <strong>{{ formatMoney(payout.amount, transaction.currency) }}</strong>
-            <small>{{ payout.reason }}</small>
+            <span class="text-sm text-slate-400">{{ payout.agentName }}</span>
+            <strong class="mt-3 block text-3xl font-semibold tracking-tight text-slate-900">{{ formatMoney(payout.amount, transaction.currency) }}</strong>
+            <small class="mt-2 block text-sm text-slate-500">{{ payout.reason }}</small>
           </div>
         </div>
 
-        <ul class="explanation-list">
+        <ul class="explanation-list mt-5 grid gap-3 text-sm leading-7 text-slate-600">
           <li v-for="item in transaction.commission.explanation" :key="item.code">
             {{ item.message }}
           </li>

@@ -160,28 +160,28 @@ await hydratePage();
   <AppShell>
     <div class="dashboard-grid">
       <div class="dashboard-grid__main">
-        <section class="workspace-hero panel">
+        <section class="workspace-hero panel rounded-[34px] border border-white/70 bg-white/80 px-8 py-8 shadow-[0_24px_60px_rgba(31,41,55,0.08)] backdrop-blur-xl">
           <div class="workspace-hero__copy">
-            <p class="eyebrow">Agent Command</p>
-            <h2>Keep agent ownership, contact quality, and portfolio context in one readable workspace.</h2>
-            <p>
+            <p class="eyebrow text-[0.72rem] font-semibold uppercase tracking-[0.32em] text-slate-400">Agent Command</p>
+            <h2 class="max-w-3xl text-balance text-3xl font-semibold leading-[1.02] tracking-tight text-slate-900">Keep agent ownership, contact quality, and portfolio context in one readable workspace.</h2>
+            <p class="mt-4 max-w-3xl text-base leading-8 text-slate-500">
               Review who is active, how many listings and transactions they carry, and keep agent
               records clean before they affect listing and deal execution.
             </p>
           </div>
 
-          <div class="workspace-hero__metrics">
-            <div>
-              <span>Visible Agents</span>
-              <strong>{{ visibleAgents.length }}</strong>
+          <div class="workspace-hero__metrics grid gap-4 md:grid-cols-3">
+            <div class="rounded-[26px] border border-slate-200/80 bg-white px-6 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+              <span class="text-sm text-slate-400">Visible Agents</span>
+              <strong class="mt-3 block text-4xl font-semibold tracking-tight text-slate-900">{{ visibleAgents.length }}</strong>
             </div>
-            <div>
-              <span>Active Agents</span>
-              <strong>{{ activeAgentCount }}</strong>
+            <div class="rounded-[26px] border border-slate-200/80 bg-white px-6 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+              <span class="text-sm text-slate-400">Active Agents</span>
+              <strong class="mt-3 block text-4xl font-semibold tracking-tight text-slate-900">{{ activeAgentCount }}</strong>
             </div>
-            <div>
-              <span>Selected Agent</span>
-              <strong>{{ selectedAgent?.name || 'No selection' }}</strong>
+            <div class="rounded-[26px] border border-slate-200/80 bg-white px-6 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+              <span class="text-sm text-slate-400">Selected Agent</span>
+              <strong class="mt-3 block text-4xl font-semibold tracking-tight text-slate-900">{{ selectedAgent?.name || 'No selection' }}</strong>
             </div>
           </div>
         </section>
@@ -194,11 +194,11 @@ await hydratePage();
           {{ successMessage }}
         </div>
 
-        <section class="panel">
+        <section class="panel rounded-[30px] border border-white/70 bg-white/85 p-7 shadow-[0_22px_52px_rgba(31,41,55,0.08)] backdrop-blur-xl">
           <div class="panel__header">
             <div>
-              <p class="eyebrow">Agent Directory</p>
-              <h2>Profiles and ownership visibility</h2>
+              <p class="eyebrow text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-slate-400">Agent Directory</p>
+              <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Profiles and ownership visibility</h2>
             </div>
           </div>
 
@@ -237,11 +237,11 @@ await hydratePage();
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel rounded-[30px] border border-white/70 bg-white/85 p-7 shadow-[0_22px_52px_rgba(31,41,55,0.08)] backdrop-blur-xl">
           <div class="panel__header">
             <div>
-              <p class="eyebrow">Selected Agent</p>
-              <h2>{{ selectedAgent?.name || 'Choose an agent' }}</h2>
+              <p class="eyebrow text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-slate-400">Selected Agent</p>
+              <h2 class="text-2xl font-semibold tracking-tight text-slate-900">{{ selectedAgent?.name || 'Choose an agent' }}</h2>
             </div>
           </div>
 

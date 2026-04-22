@@ -105,80 +105,81 @@ async function submit() {
 </script>
 
 <template>
-  <section class="panel">
+  <section class="panel rounded-[30px] border border-white/70 bg-white/85 p-7 shadow-[0_22px_52px_rgba(31,41,55,0.08)] backdrop-blur-xl">
     <div class="panel__header">
       <div>
-        <p class="eyebrow">Create Transaction</p>
-        <h2>Open a new transaction from the web</h2>
+        <p class="eyebrow text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-slate-400">Create Transaction</p>
+        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Open a new transaction from the web</h2>
       </div>
     </div>
 
-    <form class="preview-form" @submit.prevent="submit">
-      <label>
-        <span>Property / Reference</span>
-        <div class="search-stack">
+    <form class="preview-form mt-6 grid gap-5" @submit.prevent="submit">
+      <label class="grid gap-2.5">
+        <span class="text-sm font-medium text-slate-600">Property / Reference</span>
+        <div class="search-stack relative">
           <input
             v-model="form.propertySearch"
             type="text"
             placeholder="Search by listing name or property ref"
+            class="min-h-[56px] rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
           >
 
-          <div v-if="listingSuggestions.length" class="search-suggestions">
+          <div v-if="listingSuggestions.length" class="search-suggestions absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 rounded-[22px] border border-slate-200 bg-white p-2 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
             <button
               v-for="item in listingSuggestions"
               :key="item.id"
               type="button"
-              class="search-suggestion"
+              class="search-suggestion grid w-full gap-1 rounded-2xl px-4 py-3 text-left transition hover:bg-slate-50"
               @click="selectListing(item)"
             >
-              <strong>{{ item.title }}</strong>
-              <small>
+              <strong class="text-sm font-semibold text-slate-900">{{ item.title }}</strong>
+              <small class="text-xs leading-5 text-slate-500">
                 {{ item.propertyRef }} • {{ item.city }} • {{ item.listingAgent.name }}
               </small>
             </button>
           </div>
         </div>
       </label>
-      <label>
-        <span>Total Service Fee</span>
-        <input v-model.number="form.totalServiceFee" type="number" min="1">
+      <label class="grid gap-2.5">
+        <span class="text-sm font-medium text-slate-600">Total Service Fee</span>
+        <input v-model.number="form.totalServiceFee" type="number" min="1" class="min-h-[56px] rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100">
       </label>
-      <label>
-        <span>Currency</span>
-        <select v-model="form.currency">
+      <label class="grid gap-2.5">
+        <span class="text-sm font-medium text-slate-600">Currency</span>
+        <select v-model="form.currency" class="min-h-[56px] rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100">
           <option value="EUR">EUR</option>
           <option value="USD">USD</option>
           <option value="TRY">TRY</option>
           <option value="GBP">GBP</option>
         </select>
       </label>
-      <label>
-        <span>Listing Agent</span>
-        <select v-model="form.listingAgentId">
+      <label class="grid gap-2.5">
+        <span class="text-sm font-medium text-slate-600">Listing Agent</span>
+        <select v-model="form.listingAgentId" class="min-h-[56px] rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100">
           <option v-for="agent in agents" :key="agent.id" :value="agent.id">
             {{ agent.name }} • {{ agent.id }}
           </option>
         </select>
       </label>
-      <label>
-        <span>Selling Agent</span>
-        <select v-model="form.sellingAgentId">
+      <label class="grid gap-2.5">
+        <span class="text-sm font-medium text-slate-600">Selling Agent</span>
+        <select v-model="form.sellingAgentId" class="min-h-[56px] rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100">
           <option v-for="agent in agents" :key="agent.id" :value="agent.id">
             {{ agent.name }} • {{ agent.id }}
           </option>
         </select>
       </label>
 
-      <button class="primary-button" :disabled="isMutating">
+      <button class="primary-button inline-flex min-h-[56px] items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#3b2f95,#6d5efc)] px-5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(99,102,241,0.28)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" :disabled="isMutating">
         {{ isMutating ? 'Saving...' : 'Create Transaction' }}
       </button>
     </form>
 
-    <p v-if="validationError" class="inline-error">
+    <p v-if="validationError" class="inline-error mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
       {{ validationError }}
     </p>
 
-    <p class="helper-copy">
+    <p class="helper-copy mt-5 text-sm leading-7 text-slate-500">
       Start typing a listing name like “sea” to pick a property from the active listing pool, or type a manual reference.
     </p>
   </section>

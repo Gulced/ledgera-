@@ -15,6 +15,7 @@ const form = reactive({
   currency: 'EUR' as Transaction['currency'],
   listingAgentId: '',
 });
+const selectedPhotos = ref<File[]>([]);
 
 const validationError = ref('');
 
@@ -62,11 +63,22 @@ async function submit() {
     return;
   }
 
-  await store.createListing(parsed.data);
+  const created = await store.createListing(parsed.data);
+
+  if (created && selectedPhotos.value.length) {
+    await store.uploadListingPhotos(created.id, selectedPhotos.value);
+  }
+
   form.title = '';
   form.city = '';
   form.fullAddress = '';
   form.askingPrice = 2500000;
+  selectedPhotos.value = [];
+}
+
+function handlePhotoSelection(event: Event) {
+  const input = event.target as HTMLInputElement;
+  selectedPhotos.value = Array.from(input.files ?? []);
 }
 </script>
 
@@ -120,6 +132,14 @@ async function submit() {
             {{ agent.name }} • {{ agent.id }}
           </option>
         </select>
+      </label>
+
+      <label class="listing-photo-upload">
+        <span>Listing Photos</span>
+        <input type="file" accept="image/*" multiple @change="handlePhotoSelection">
+        <small v-if="selectedPhotos.length">
+          {{ selectedPhotos.length }} photo{{ selectedPhotos.length > 1 ? 's' : '' }} selected
+        </small>
       </label>
 
       <button class="primary-button" :disabled="isMutating">

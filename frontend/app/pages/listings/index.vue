@@ -35,24 +35,24 @@ await store.loadListings();
   <AppShell>
     <div class="dashboard-grid">
       <div class="dashboard-grid__main">
-        <section class="workspace-hero panel">
+        <section class="workspace-hero panel rounded-[34px] border border-white/70 bg-white/80 px-8 py-8 shadow-[0_24px_60px_rgba(31,41,55,0.08)] backdrop-blur-xl">
           <div class="workspace-hero__copy">
-            <p class="eyebrow">Listing Command</p>
-            <h2>Manage portfolio visibility, status changes, and listing-to-deal handoff in one place.</h2>
-            <p>
+            <p class="eyebrow text-[0.72rem] font-semibold uppercase tracking-[0.32em] text-slate-400">Listing Command</p>
+            <h2 class="max-w-3xl text-balance text-3xl font-semibold leading-[1.02] tracking-tight text-slate-900">Manage portfolio visibility, status changes, and listing-to-deal handoff in one place.</h2>
+            <p class="mt-4 max-w-3xl text-base leading-8 text-slate-500">
               Use this workspace to monitor active inventory, filter by agent ownership, and move the
               right properties into transaction flow at the right time.
             </p>
           </div>
 
-          <div class="workspace-hero__metrics">
-            <div>
-              <span>Visible Listings</span>
-              <strong>{{ listings.length }}</strong>
+          <div class="workspace-hero__metrics grid gap-4 md:grid-cols-2">
+            <div class="rounded-[26px] border border-slate-200/80 bg-white px-6 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+              <span class="text-sm text-slate-400">Visible Listings</span>
+              <strong class="mt-3 block text-4xl font-semibold tracking-tight text-slate-900">{{ listings.length }}</strong>
             </div>
-            <div>
-              <span>Selected Agent</span>
-              <strong>{{ selectedAgent?.name || 'All portfolios' }}</strong>
+            <div class="rounded-[26px] border border-slate-200/80 bg-white px-6 py-5 shadow-[0_14px_34px_rgba(31,41,55,0.05)]">
+              <span class="text-sm text-slate-400">Selected Agent</span>
+              <strong class="mt-3 block text-4xl font-semibold tracking-tight text-slate-900">{{ selectedAgent?.name || 'All portfolios' }}</strong>
             </div>
           </div>
         </section>
@@ -72,7 +72,7 @@ await store.loadListings();
           :heading="listingHeading"
           :eyebrow="listingEyebrow"
         />
-        <div v-else class="panel empty-state">
+        <div v-else class="panel empty-state rounded-[28px] border border-dashed border-slate-200 bg-white/70 px-8 py-10 text-slate-500">
           {{
             selectedAgent
               ? `No listings matched the current filters for ${selectedAgent.name}.`

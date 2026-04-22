@@ -7,6 +7,7 @@ import type { ActorContextDto } from '../transactions/dto/transaction.dto';
 import type {
   AssistantHistoryQueryDto,
   AssistantMessageDto,
+  AssistantProposedActionDto,
   AssistantPageType,
   AssistantResponseDto,
 } from './dto/assistant.dto';
@@ -81,11 +82,21 @@ export class AssistantService {
       source,
     });
 
+    const proposedActions = this.buildProposedActions({
+      actor,
+      pageType,
+      prompt,
+      entityId,
+      context,
+      response,
+    });
+
     return {
       pageType,
       prompt,
       response,
       source,
+      proposedActions,
       entityId,
       requestedBy: actor,
     };
@@ -367,5 +378,180 @@ export class AssistantService {
         ].join('\n\n');
         }
     }
+  }
+
+  private buildProposedActions(input: {
+    actor: ActorContextDto;
+    pageType: AssistantPageType;
+    prompt: string;
+    entityId?: string;
+    context: Record<string, unknown>;
+    response: string;
+  }): AssistantProposedActionDto[] {
+    switch (input.pageType) {
+      case 'listing_detail':
+        return this.buildListingActions(input);
+      case 'transaction_detail':
+        return this.buildTransactionActions(input);
+      default:
+        return [];
+    }
+  }
+
+  private buildListingActions(input: {
+    actor: ActorContextDto;
+    prompt: string;
+    entityId?: string;
+    context: Record<string, unknown>;
+    response: string;
+  }): AssistantProposedActionDto[] {
+    const listing = input.context.listing as
+      | {
+          id?: string;
+          title?: string;
+          status?: 'active' | 'under_offer' | 'closed';
+          listingAgent?: { name?: string };
+        }
+      | undefined;
+
+    const entityId = input.entityId ?? listing?.id;
+
+    if (!entityId) {
+      return [];
+    }
+
+    const title = listing?.title ?? 'this listing';
+    const assigneeName = listing?.listingAgent?.name || input.actor.name;
+    const noteBody = this.buildActionNoteBody(input.response, title);
+    const actions: AssistantProposedActionDto[] = [
+      {
+        id: `note-${entityId}`,
+        kind: 'create_note',
+        entityType: 'listing',
+        entityId,
+        label: 'Save guidance as note',
+        description: `Store the assistant summary on ${title} for the team.`,
+        body: noteBody,
+      },
+      {
+        id: `task-${entityId}`,
+        kind: 'create_task',
+        entityType: 'listing',
+        entityId,
+        label: 'Create follow-up task',
+        description: `Create a next-step task for ${title}.`,
+        title: this.buildTaskTitle(input.prompt, `Follow up on ${title}`),
+        dueDate: this.buildDueDate(1),
+        assigneeName,
+      },
+    ];
+
+    const suggestedStatus = this.inferListingStatus(listing?.status, input.prompt, input.response);
+
+    if (suggestedStatus && suggestedStatus !== listing?.status) {
+      actions.push({
+        id: `status-${entityId}-${suggestedStatus}`,
+        kind: 'update_listing_status',
+        entityType: 'listing',
+        entityId,
+        label: `Update status to ${suggestedStatus.replaceAll('_', ' ')}`,
+        description: `Apply the suggested status change for ${title}.`,
+        status: suggestedStatus,
+      });
+    }
+
+    return actions;
+  }
+
+  private buildTransactionActions(input: {
+    actor: ActorContextDto;
+    prompt: string;
+    entityId?: string;
+    context: Record<string, unknown>;
+    response: string;
+  }): AssistantProposedActionDto[] {
+    const transaction = input.context.transaction as
+      | {
+          id?: string;
+          propertyRef?: string;
+          stage?: string;
+          listingAgent?: { name?: string };
+          sellingAgent?: { name?: string };
+        }
+      | undefined;
+
+    const entityId = input.entityId ?? transaction?.id;
+
+    if (!entityId) {
+      return [];
+    }
+
+    const propertyRef = transaction?.propertyRef ?? 'this transaction';
+    const assigneeName =
+      transaction?.sellingAgent?.name || transaction?.listingAgent?.name || input.actor.name;
+
+    return [
+      {
+        id: `note-${entityId}`,
+        kind: 'create_note',
+        entityType: 'transaction',
+        entityId,
+        label: 'Save transaction note',
+        description: `Store the latest assistant guidance on ${propertyRef}.`,
+        body: this.buildActionNoteBody(input.response, propertyRef),
+      },
+      {
+        id: `task-${entityId}`,
+        kind: 'create_task',
+        entityType: 'transaction',
+        entityId,
+        label: 'Create transaction task',
+        description: `Create a follow-up task for ${propertyRef}.`,
+        title: this.buildTaskTitle(input.prompt, `Progress ${propertyRef}`),
+        dueDate: this.buildDueDate(1),
+        assigneeName,
+      },
+    ];
+  }
+
+  private buildActionNoteBody(response: string, label: string) {
+    const compact = response.replace(/\s+/g, ' ').trim();
+    const sliced = compact.length > 280 ? `${compact.slice(0, 277)}...` : compact;
+    return `AI guidance for ${label}: ${sliced}`;
+  }
+
+  private buildTaskTitle(prompt: string, fallback: string) {
+    const cleaned = prompt.replace(/\s+/g, ' ').trim();
+
+    if (!cleaned) {
+      return fallback;
+    }
+
+    const sentence = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+    return sentence.length > 90 ? `${sentence.slice(0, 87)}...` : sentence;
+  }
+
+  private buildDueDate(daysFromNow: number) {
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + daysFromNow);
+    return dueDate.toISOString().slice(0, 10);
+  }
+
+  private inferListingStatus(
+    currentStatus: 'active' | 'under_offer' | 'closed' | undefined,
+    prompt: string,
+    response: string,
+  ) {
+    const combined = `${prompt} ${response}`.toLowerCase();
+
+    if (currentStatus !== 'closed' && /\b(close|closed|completion|complete)\b/.test(combined)) {
+      return 'closed' as const;
+    }
+
+    if (currentStatus === 'active' && /\b(offer|under offer|under_offer)\b/.test(combined)) {
+      return 'under_offer' as const;
+    }
+
+    return undefined;
   }
 }

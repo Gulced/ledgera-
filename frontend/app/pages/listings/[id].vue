@@ -21,6 +21,12 @@ const canEditStatus = computed(() =>
     (activeRole.value === 'agent' && listing.value.listingAgent.id === actor.value.userId)),
 );
 
+const canManagePhotos = computed(() =>
+  !!listing.value &&
+  (activeRole.value === 'admin' ||
+    (activeRole.value === 'agent' && listing.value.listingAgent.id === actor.value.userId)),
+);
+
 const mapCoordinates = computed(() =>
   listing.value ? getApproximateListingCoordinates(listing.value) : null,
 );
@@ -159,6 +165,12 @@ function handleListingUpdated(updated: Listing) {
           <p>Add a supported city to show a map marker in the detail view.</p>
         </div>
       </section>
+
+      <ListingPhotosPanel
+        :listing="listing"
+        :can-manage="canManagePhotos"
+        @updated="handleListingUpdated"
+      />
 
       <EditListingPanel :listing="listing" @updated="handleListingUpdated" />
       <ConvertListingPanel :listing="listing" />

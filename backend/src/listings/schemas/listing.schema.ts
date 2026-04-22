@@ -29,6 +29,18 @@ export class ListingRecord {
   @Prop({ required: true, default: 'active' })
   status: string;
 
+  @Prop({ required: true, type: Array, default: [] })
+  photos: Array<{
+    id: string;
+    fileName: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    url: string;
+    uploadedAt: string;
+    isCover: boolean;
+  }>;
+
   @Prop({ required: true, type: Object })
   listingAgent: {
     id: string;

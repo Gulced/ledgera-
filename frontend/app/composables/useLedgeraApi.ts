@@ -308,6 +308,39 @@ export function useLedgeraApi() {
         method: 'DELETE',
       });
     },
+    async uploadListingPhotos(actor: ActorContext, id: string, files: File[]) {
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      try {
+        const response = await $fetch<ApiSuccess<Listing>>(`/listings/${id}/photos`, {
+          baseURL: config.public.apiBase,
+          method: 'POST',
+          body: formData,
+          headers: buildHeaders(actor),
+        });
+
+        return response.data;
+      } catch (error) {
+        const apiError = error as { data?: ApiError };
+        const fallbackMessage = apiError.data?.error.message
+          ?? `Backend is unreachable. Make sure the API is running at ${config.public.apiBase}.`;
+
+        throw createError({
+          statusCode: apiError.data?.error.statusCode ?? 500,
+          statusMessage: fallbackMessage,
+          data: apiError.data?.error,
+        });
+      }
+    },
+    deleteListingPhoto(actor: ActorContext, listingId: string, photoId: string) {
+      return request<Listing>(`/listings/${listingId}/photos/${photoId}`, {
+        actor,
+        method: 'DELETE',
+      });
+    },
     assistListing(
       actor: ActorContext,
       id: string,

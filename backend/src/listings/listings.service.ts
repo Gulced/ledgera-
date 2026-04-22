@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import crypto from 'crypto';
+import { unlink } from 'fs/promises';
 import { AgentsService } from '../agents/agents.service';
 import {
   AppBadRequestException,
@@ -11,6 +12,7 @@ import { SUPPORTED_CURRENCY_VALUES } from '../transactions/dto/transaction.dto';
 import type {
   CreateListingDto,
   ListingDto,
+  ListingPhotoDto,
   ListingListQueryDto,
   ListingStatus,
   UpdateListingDto,
@@ -78,6 +80,7 @@ export class ListingsService {
       askingPrice: payload.askingPrice,
       currency: payload.currency ?? 'EUR',
       status: 'active',
+      photos: [],
       listingAgent: {
         id: listingAgent.id,
         name: listingAgent.name,
@@ -136,7 +139,84 @@ export class ListingsService {
   async delete(id: string, actor: ActorContextDto): Promise<void> {
     const listing = await this.findById(id, actor);
     this.assertCanManageListing(actor, listing);
+
+    await Promise.all(
+      listing.photos.map((photo) =>
+        unlink(this.resolveStoredFilePath(photo.url)).catch(() => undefined),
+      ),
+    );
+
     await this.listingsRepository.delete(id);
+  }
+
+  async addPhotos(
+    id: string,
+    files: Array<{
+      filename: string;
+      originalname: string;
+      mimetype: string;
+      size: number;
+    }>,
+    actor: ActorContextDto,
+  ): Promise<ListingDto> {
+    const listing = await this.findById(id, actor);
+    this.assertCanManageListing(actor, listing);
+
+    if (!files.length) {
+      throw new AppBadRequestException(
+        'INVALID_LISTING_PAYLOAD',
+        'At least one image file is required.',
+      );
+    }
+
+    const newPhotos: ListingPhotoDto[] = files.map((file, index) => ({
+      id: crypto.randomUUID(),
+      fileName: file.filename,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      url: `/uploads/listings/${file.filename}`,
+      uploadedAt: new Date().toISOString(),
+      isCover: listing.photos.length === 0 && index === 0,
+    }));
+
+    return this.listingsRepository.update(id, {
+      ...listing,
+      photos: [...listing.photos, ...newPhotos],
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  async deletePhoto(
+    id: string,
+    photoId: string,
+    actor: ActorContextDto,
+  ): Promise<ListingDto> {
+    const listing = await this.findById(id, actor);
+    this.assertCanManageListing(actor, listing);
+    const photo = listing.photos.find((item) => item.id === photoId);
+
+    if (!photo) {
+      throw new AppNotFoundException(
+        'LISTING_NOT_FOUND',
+        `Photo ${photoId} was not found for listing ${id}.`,
+      );
+    }
+
+    await unlink(this.resolveStoredFilePath(photo.url)).catch(() => undefined);
+
+    const remainingPhotos = listing.photos
+      .filter((item) => item.id !== photoId)
+      .map((item, index) => ({
+        ...item,
+        isCover: index === 0,
+      }));
+
+    return this.listingsRepository.update(id, {
+      ...listing,
+      photos: remainingPhotos,
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   private assertCanListListings(actor: ActorContextDto, query: ListingListQueryDto) {
@@ -292,5 +372,9 @@ export class ListingsService {
       .toLowerCase();
 
     return tokens.every((token) => searchableText.includes(token));
+  }
+
+  private resolveStoredFilePath(url: string) {
+    return url.startsWith('/uploads/') ? `${process.cwd()}${url}` : url;
   }
 }

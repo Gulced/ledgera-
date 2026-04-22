@@ -205,6 +205,17 @@ export interface UpdateTransactionInput extends CreateTransactionInput {
 
 export type ListingStatus = 'active' | 'under_offer' | 'closed';
 
+export interface ListingPhoto {
+  id: string;
+  fileName: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  uploadedAt: string;
+  isCover: boolean;
+}
+
 export interface Listing {
   id: string;
   propertyRef: string;
@@ -214,6 +225,7 @@ export interface Listing {
   askingPrice: number;
   currency: Transaction['currency'];
   status: ListingStatus;
+  photos: ListingPhoto[];
   listingAgent: AgentRef;
   createdBy: ActorContext;
   createdAt: string;
@@ -266,9 +278,43 @@ export interface AssistantResponse {
   prompt: string;
   response: string;
   source: 'gemini' | 'fallback';
+  proposedActions: AssistantProposedAction[];
   entityId?: string;
   requestedBy: ActorContext;
 }
+
+export type AssistantActionKind = 'create_note' | 'create_task' | 'update_listing_status';
+
+export interface AssistantActionBase {
+  id: string;
+  kind: AssistantActionKind;
+  entityType: WorkspaceEntityType;
+  entityId: string;
+  label: string;
+  description: string;
+}
+
+export interface AssistantCreateNoteAction extends AssistantActionBase {
+  kind: 'create_note';
+  body: string;
+}
+
+export interface AssistantCreateTaskAction extends AssistantActionBase {
+  kind: 'create_task';
+  title: string;
+  dueDate: string;
+  assigneeName?: string;
+}
+
+export interface AssistantUpdateListingStatusAction extends AssistantActionBase {
+  kind: 'update_listing_status';
+  status: ListingStatus;
+}
+
+export type AssistantProposedAction =
+  | AssistantCreateNoteAction
+  | AssistantCreateTaskAction
+  | AssistantUpdateListingStatusAction;
 
 export interface AssistantMessage {
   id: string;

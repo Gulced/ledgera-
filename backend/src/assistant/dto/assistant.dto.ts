@@ -1,5 +1,6 @@
 import { IsIn, IsObject, IsOptional, IsString } from 'class-validator';
 import type { ActorContextDto } from '../../transactions/dto/transaction.dto';
+import type { ListingStatus } from '../../listings/dto/listing.dto';
 
 export const ASSISTANT_PAGE_TYPES = [
   'dashboard',
@@ -39,11 +40,45 @@ export class AssistantHistoryQueryDto {
   entityId?: string;
 }
 
+export type AssistantActionKind = 'create_note' | 'create_task' | 'update_listing_status';
+
+export interface AssistantActionBaseDto {
+  id: string;
+  kind: AssistantActionKind;
+  entityType: 'listing' | 'transaction';
+  entityId: string;
+  label: string;
+  description: string;
+}
+
+export interface AssistantCreateNoteActionDto extends AssistantActionBaseDto {
+  kind: 'create_note';
+  body: string;
+}
+
+export interface AssistantCreateTaskActionDto extends AssistantActionBaseDto {
+  kind: 'create_task';
+  title: string;
+  dueDate: string;
+  assigneeName?: string;
+}
+
+export interface AssistantUpdateListingStatusActionDto extends AssistantActionBaseDto {
+  kind: 'update_listing_status';
+  status: ListingStatus;
+}
+
+export type AssistantProposedActionDto =
+  | AssistantCreateNoteActionDto
+  | AssistantCreateTaskActionDto
+  | AssistantUpdateListingStatusActionDto;
+
 export interface AssistantResponseDto {
   pageType: AssistantPageType;
   prompt: string;
   response: string;
   source: 'gemini' | 'fallback';
+  proposedActions: AssistantProposedActionDto[];
   entityId?: string;
   requestedBy: ActorContextDto;
 }

@@ -1,3 +1,5 @@
+import tailwindcss from '@tailwindcss/vite'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   modules: ['@pinia/nuxt'],
@@ -13,6 +15,7 @@ export default defineNuxtConfig({
   },
   vite: {
     plugins: [
+      tailwindcss(),
       {
         name: 'ledgera-fix-vue-router-devtools-null-instance',
         enforce: 'pre',

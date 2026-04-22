@@ -2,6 +2,21 @@
 
 Ledgera is a role-aware real-estate operations platform built around listings, transaction workflow, payout visibility, and auditability.
 
+Required stack used in the project:
+- Backend: Node.js LTS, TypeScript, NestJS, MongoDB Atlas via Mongoose, Jest
+- Frontend: Nuxt 3, Pinia, Tailwind CSS
+
+Testing and styling notes:
+- Backend tests are written with `Jest`
+- Current backend test coverage focuses on:
+  - commission rules
+  - transaction stage transitions
+  - financial lock behavior
+  - authorization and core business logic
+- Tailwind CSS is installed and available in the frontend
+- The frontend now uses a Tailwind-first UI layer across the main workspace screens
+- The existing custom design system in `main.css` remains in place as a supporting layer for shared tokens, legacy components, and visual continuity during the transition
+
 The app includes:
 - transaction lifecycle management
 - transaction editing and safe deletion before financial lock
@@ -14,8 +29,8 @@ The app includes:
 
 ## Quick Start
 
-1. Start MongoDB locally.
-2. Run the backend.
+1. Create a MongoDB Atlas cluster and copy its connection string.
+2. Run the backend with that Atlas URI.
 3. Seed demo data.
 4. Run the frontend.
 
@@ -25,6 +40,7 @@ Backend:
 cd /Users/gulcekoc/ledgera/backend
 npm install
 cp .env.example .env
+# paste your MongoDB Atlas URI into MONGODB_URI
 npm run start:dev
 ```
 

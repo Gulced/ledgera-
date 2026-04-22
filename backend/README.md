@@ -20,7 +20,7 @@ NestJS backend for Ledgera, a transaction workflow platform for real estate agen
 - Node.js LTS
 - NestJS
 - TypeScript
-- MongoDB / Mongoose
+- MongoDB Atlas / Mongoose
 - class-validator / class-transformer
 - Jest / Supertest
 
@@ -36,11 +36,13 @@ Environment variables:
 
 ```env
 PORT=3000
-MONGODB_URI=mongodb://127.0.0.1:27017/ledgera
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/ledgera?retryWrites=true&w=majority&appName=Ledgera
 MONGODB_DB=ledgera
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-2.5-flash
 ```
+
+`MONGODB_URI` should point to your MongoDB Atlas cluster for the mandatory stack requirement. The backend still accepts a local MongoDB URI for offline development, but Atlas is the intended submission target.
 
 The frontend is expected to run on:
 

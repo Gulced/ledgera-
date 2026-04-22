@@ -5,12 +5,19 @@ import {
   Get,
   Headers,
   HttpCode,
+  HttpStatus,
+  UploadedFiles,
   Param,
   Patch,
   Post,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { mkdirSync } from 'fs';
 import type { UserRole } from '../transactions/dto/transaction.dto';
 import { buildAuthorizedActorContext } from '../transactions/auth/transaction-authorization';
 import {
@@ -116,6 +123,74 @@ export class ListingsController {
     return this.listingsService.update(
       id,
       payload,
+      buildAuthorizedActorContext(userId, name, role),
+    );
+  }
+
+  @ApiOperation({ summary: 'Upload listing photos.' })
+  @Post(':id/photos')
+  @UseInterceptors(
+    FilesInterceptor('files', 12, {
+      storage: diskStorage({
+        destination: (_request, _file, callback) => {
+          const directory = `${process.cwd()}/uploads/listings`;
+          mkdirSync(directory, { recursive: true });
+          callback(null, directory);
+        },
+        filename: (_request, file, callback) => {
+          const extension = extname(file.originalname || '').toLowerCase() || '.jpg';
+          callback(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`);
+        },
+      }),
+      fileFilter: (_request, file, callback) => {
+        if (!file.mimetype.startsWith('image/')) {
+          callback(
+            new Error('Only image uploads are supported for listing photos.'),
+            false,
+          );
+          return;
+        }
+
+        callback(null, true);
+      },
+      limits: {
+        fileSize: 8 * 1024 * 1024,
+      },
+    }),
+  )
+  uploadPhotos(
+    @Param('id') id: string,
+    @UploadedFiles()
+    files: Array<{
+      filename: string;
+      originalname: string;
+      mimetype: string;
+      size: number;
+    }>,
+    @Headers('x-user-id') userId?: string,
+    @Headers('x-user-name') name?: string,
+    @Headers('x-user-role') role?: UserRole,
+  ) {
+    return this.listingsService.addPhotos(
+      id,
+      files ?? [],
+      buildAuthorizedActorContext(userId, name, role),
+    );
+  }
+
+  @ApiOperation({ summary: 'Delete one listing photo.' })
+  @Delete(':id/photos/:photoId')
+  @HttpCode(HttpStatus.OK)
+  deletePhoto(
+    @Param('id') id: string,
+    @Param('photoId') photoId: string,
+    @Headers('x-user-id') userId?: string,
+    @Headers('x-user-name') name?: string,
+    @Headers('x-user-role') role?: UserRole,
+  ) {
+    return this.listingsService.deletePhoto(
+      id,
+      photoId,
       buildAuthorizedActorContext(userId, name, role),
     );
   }

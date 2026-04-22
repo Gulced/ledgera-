@@ -64,6 +64,9 @@ export class MongoListingsRepository implements ListingsRepository {
   private stripMongoFields(document: ListingDto & { _id?: unknown }) {
     const { _id, ...listing } = document;
 
-    return listing;
+    return {
+      ...listing,
+      photos: listing.photos ?? [],
+    };
   }
 }

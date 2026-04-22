@@ -19,6 +19,17 @@ export type ListingStatus = 'active' | 'under_offer' | 'closed';
 
 const LISTING_STATUS_VALUES = ['active', 'under_offer', 'closed'] as const;
 
+export interface ListingPhotoDto {
+  id: string;
+  fileName: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  uploadedAt: string;
+  isCover: boolean;
+}
+
 export class CreateListingDto {
   @IsString()
   @IsNotEmpty()
@@ -101,6 +112,7 @@ export interface ListingDto {
   askingPrice: number;
   currency: SupportedCurrency;
   status: ListingStatus;
+  photos: ListingPhotoDto[];
   listingAgent: AgentRefDto;
   createdBy: ActorContextDto;
   createdAt: string;

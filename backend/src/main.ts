@@ -1,12 +1,14 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableCors({
     origin: [
       'http://localhost:3001',
@@ -31,6 +33,9 @@ async function bootstrap() {
   );
   app.useGlobalInterceptors(new ApiResponseInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads',
+  });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Ledgera Backend API')

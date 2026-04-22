@@ -310,6 +310,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       const created = await api.createListing(actor.value, input, agents.value);
       await loadListings();
       successMessage.value = `Listing created. Property Ref: ${created.propertyRef}`;
+      return created;
     } catch (error) {
       const appError = error as { statusMessage?: string };
       errorMessage.value =
@@ -377,6 +378,50 @@ export const useDashboardStore = defineStore('dashboard', () => {
       const appError = error as { statusMessage?: string };
       errorMessage.value =
         appError.statusMessage ?? 'An error occurred while deleting the listing.';
+      throw error;
+    } finally {
+      isMutating.value = false;
+    }
+  }
+
+  async function uploadListingPhotos(id: string, files: File[]) {
+    isMutating.value = true;
+    errorMessage.value = '';
+    successMessage.value = '';
+
+    try {
+      const updated = await api.uploadListingPhotos(actor.value, id, files);
+      listings.value = listings.value.map((listing) =>
+        listing.id === id ? updated : listing,
+      );
+      successMessage.value = `${files.length} listing photo${files.length > 1 ? 's were' : ' was'} uploaded.`;
+      return updated;
+    } catch (error) {
+      const appError = error as { statusMessage?: string };
+      errorMessage.value =
+        appError.statusMessage ?? 'An error occurred while uploading listing photos.';
+      throw error;
+    } finally {
+      isMutating.value = false;
+    }
+  }
+
+  async function deleteListingPhoto(listingId: string, photoId: string) {
+    isMutating.value = true;
+    errorMessage.value = '';
+    successMessage.value = '';
+
+    try {
+      const updated = await api.deleteListingPhoto(actor.value, listingId, photoId);
+      listings.value = listings.value.map((listing) =>
+        listing.id === listingId ? updated : listing,
+      );
+      successMessage.value = 'Listing photo deleted.';
+      return updated;
+    } catch (error) {
+      const appError = error as { statusMessage?: string };
+      errorMessage.value =
+        appError.statusMessage ?? 'An error occurred while deleting the listing photo.';
       throw error;
     } finally {
       isMutating.value = false;
@@ -454,6 +499,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
     createListing,
     updateListing,
     deleteListing,
+    uploadListingPhotos,
+    deleteListingPhoto,
     updateListingStatus,
     createTransaction,
     updateTransaction,
