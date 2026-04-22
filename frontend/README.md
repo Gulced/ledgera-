@@ -14,7 +14,7 @@ Example values:
 
 ```env
 NUXT_PUBLIC_API_BASE=http://localhost:3000
-PORT=3001
+PORT=3003
 ```
 
 `NUXT_PUBLIC_API_BASE` should point to the backend API.
@@ -27,16 +27,16 @@ npm install
 
 ## Development
 
-Run the frontend on port `3001` so it does not conflict with the backend.
+Run the frontend on port `3003` so it does not conflict with the backend.
 
 ```bash
-npm run dev -- --port 3001
+npm run dev
 ```
 
 Frontend URL:
 
 ```text
-http://localhost:3001
+http://localhost:3003
 ```
 
 ## Demo Access
@@ -85,3 +85,23 @@ Locally preview production build:
 ```bash
 npm run preview
 ```
+
+## Vercel Deployment
+
+Recommended production deployment:
+
+- Platform: `Vercel`
+- Root directory: `frontend`
+- Build command: `npm run build`
+- Install command: `npm install`
+
+Required environment variables:
+
+```env
+NUXT_PUBLIC_API_BASE=https://your-render-backend.onrender.com
+```
+
+Notes:
+
+- the frontend is configured as a Nuxt 3 app and is ready for Vercel deployment
+- the production frontend must point to the live Render backend through `NUXT_PUBLIC_API_BASE`

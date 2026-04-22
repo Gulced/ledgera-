@@ -12,4 +12,12 @@ export class HealthController {
       status: 'ok',
     };
   }
+
+  @ApiOperation({ summary: 'Plain production health endpoint.' })
+  @Get('health')
+  getPlainHealth() {
+    return {
+      status: 'ok',
+    };
+  }
 }

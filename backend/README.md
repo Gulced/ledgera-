@@ -38,6 +38,7 @@ Environment variables:
 PORT=3000
 MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/ledgera?retryWrites=true&w=majority&appName=Ledgera
 MONGODB_DB=ledgera
+CORS_ORIGINS=http://localhost:3003
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-2.5-flash
 CLOUDINARY_CLOUD_NAME=
@@ -48,6 +49,7 @@ CLOUDINARY_FOLDER=ledgera/listings
 
 `MONGODB_URI` should point to your MongoDB Atlas cluster for the mandatory stack requirement. The backend still accepts a local MongoDB URI for offline development, but Atlas is the intended submission target.
 Listing photos persist their metadata in MongoDB. When `CLOUDINARY_*` variables are configured, the image files are uploaded to Cloudinary; otherwise the backend falls back to local disk storage for development.
+`CORS_ORIGINS` accepts a comma-separated list of allowed frontend origins and should include your deployed Vercel URL in production.
 
 The frontend is expected to run on:
 

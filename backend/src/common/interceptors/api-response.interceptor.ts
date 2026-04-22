@@ -11,9 +11,16 @@ export class ApiResponseInterceptor<T>
   implements NestInterceptor<T, { success: true; data: T; timestamp: string }>
 {
   intercept(
-    _context: ExecutionContext,
+    context: ExecutionContext,
     next: CallHandler,
   ): Observable<{ success: true; data: T; timestamp: string }> {
+    const request = context.switchToHttp().getRequest<{ path?: string; url?: string }>();
+    const requestPath = request?.path ?? request?.url ?? '';
+
+    if (requestPath === '/health') {
+      return next.handle() as Observable<{ success: true; data: T; timestamp: string }>;
+    }
+
     return next.handle().pipe(
       map((data) => ({
         success: true as const,

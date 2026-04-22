@@ -9,9 +9,13 @@ definePageMeta({
 
 const authStore = useAuthStore();
 const router = useRouter();
+const api = useLedgeraApi();
+const config = useRuntimeConfig();
 const activeRole = ref<UserRole>('admin');
 const isSubmitting = ref(false);
 const errorMessage = ref('');
+const healthChecked = ref(false);
+const backendAvailable = ref(true);
 
 const loginForm = reactive({
   email: '',
@@ -35,6 +39,11 @@ onMounted(() => {
   if (authStore.currentUser) {
     void router.replace('/');
   }
+
+  void (async () => {
+    backendAvailable.value = await api.checkBackendHealth();
+    healthChecked.value = true;
+  })();
 });
 
 async function submitLogin() {
@@ -122,6 +131,10 @@ async function submitLogin() {
         </div>
 
         <div class="auth-form-card">
+          <p v-if="healthChecked && !backendAvailable" class="inline-error auth-inline-error">
+            Backend is unreachable. Make sure the API is running at {{ config.public.apiBase }}.
+          </p>
+
           <p v-if="errorMessage" class="inline-error auth-inline-error">
             {{ errorMessage }}
           </p>

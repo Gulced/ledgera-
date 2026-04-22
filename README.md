@@ -130,6 +130,7 @@ Backend deployment notes:
 - set `MONGODB_URI` to your Atlas SRV connection string
 - set `CORS_ORIGINS` to your live Vercel frontend URL
 - optional AI support requires `GEMINI_API_KEY`
+- production health endpoint: `GET /health` returns `{ "status": "ok" }`
 
 Frontend deployment notes:
 - deploy the `frontend/` directory as a Nuxt project on Vercel

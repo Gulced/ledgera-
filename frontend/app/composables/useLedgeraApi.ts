@@ -55,6 +55,26 @@ function cleanQuery(filters: Partial<TransactionFilters>) {
 export function useLedgeraApi() {
   const config = useRuntimeConfig();
 
+  async function checkBackendHealth() {
+    try {
+      const response = await $fetch<
+        | { status?: string }
+        | ApiSuccess<{ status?: string }>
+      >('/health', {
+        baseURL: config.public.apiBase,
+        method: 'GET',
+      });
+
+      if ('success' in response) {
+        return response.data?.status === 'ok';
+      }
+
+      return response.status === 'ok';
+    } catch {
+      return false;
+    }
+  }
+
   async function request<T>(
     path: string,
     options: {
@@ -88,6 +108,7 @@ export function useLedgeraApi() {
   }
 
   return {
+    checkBackendHealth,
     getUsers(actor: ActorContext) {
       return request<AuthAccount[]>('/users', { actor });
     },
