@@ -9,19 +9,24 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const configuredOrigins = process.env.CORS_ORIGINS?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean) ?? [];
+  const defaultOrigins = [
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+    'http://localhost:3002',
+    'http://127.0.0.1:3002',
+    'http://localhost:3003',
+    'http://127.0.0.1:3003',
+    'http://localhost:3004',
+    'http://127.0.0.1:3004',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ];
+
   app.enableCors({
-    origin: [
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-      'http://localhost:3002',
-      'http://127.0.0.1:3002',
-      'http://localhost:3003',
-      'http://127.0.0.1:3003',
-      'http://localhost:3004',
-      'http://127.0.0.1:3004',
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-    ],
+    origin: [...new Set([...defaultOrigins, ...configuredOrigins])],
     credentials: true,
   });
   app.useGlobalPipes(

@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import crypto from 'crypto';
-import { unlink } from 'fs/promises';
+import { mkdir, unlink, writeFile } from 'fs/promises';
+import path from 'path';
 import { AgentsService } from '../agents/agents.service';
 import {
   AppBadRequestException,
@@ -25,6 +27,7 @@ export class ListingsService {
     @Inject(ListingsRepository)
     private readonly listingsRepository: ListingsRepository,
     private readonly agentsService: AgentsService,
+    private readonly configService: ConfigService,
   ) {}
 
   async findAll(
@@ -141,9 +144,7 @@ export class ListingsService {
     this.assertCanManageListing(actor, listing);
 
     await Promise.all(
-      listing.photos.map((photo) =>
-        unlink(this.resolveStoredFilePath(photo.url)).catch(() => undefined),
-      ),
+      listing.photos.map((photo) => this.deleteStoredPhoto(photo)),
     );
 
     await this.listingsRepository.delete(id);
@@ -152,7 +153,7 @@ export class ListingsService {
   async addPhotos(
     id: string,
     files: Array<{
-      filename: string;
+      buffer: Buffer;
       originalname: string;
       mimetype: string;
       size: number;
@@ -169,16 +170,11 @@ export class ListingsService {
       );
     }
 
-    const newPhotos: ListingPhotoDto[] = files.map((file, index) => ({
-      id: crypto.randomUUID(),
-      fileName: file.filename,
-      originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      url: `/uploads/listings/${file.filename}`,
-      uploadedAt: new Date().toISOString(),
-      isCover: listing.photos.length === 0 && index === 0,
-    }));
+    const newPhotos = await Promise.all(
+      files.map((file, index) =>
+        this.storePhoto(file, listing.photos.length === 0 && index === 0),
+      ),
+    );
 
     return this.listingsRepository.update(id, {
       ...listing,
@@ -203,7 +199,7 @@ export class ListingsService {
       );
     }
 
-    await unlink(this.resolveStoredFilePath(photo.url)).catch(() => undefined);
+    await this.deleteStoredPhoto(photo);
 
     const remainingPhotos = listing.photos
       .filter((item) => item.id !== photoId)
@@ -374,7 +370,120 @@ export class ListingsService {
     return tokens.every((token) => searchableText.includes(token));
   }
 
-  private resolveStoredFilePath(url: string) {
-    return url.startsWith('/uploads/') ? `${process.cwd()}${url}` : url;
+  private async storePhoto(
+    file: {
+      buffer: Buffer;
+      originalname: string;
+      mimetype: string;
+      size: number;
+    },
+    isCover: boolean,
+  ): Promise<ListingPhotoDto> {
+    const uploadedAt = new Date().toISOString();
+    const cloudinaryCloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
+    const cloudinaryApiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
+    const cloudinaryApiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
+    const cloudinaryFolder =
+      this.configService.get<string>('CLOUDINARY_FOLDER') ?? 'ledgera/listings';
+
+    if (cloudinaryCloudName && cloudinaryApiKey && cloudinaryApiSecret) {
+      const timestamp = Math.floor(Date.now() / 1000).toString();
+      const publicId = `${cloudinaryFolder}/${crypto.randomUUID()}`;
+      const signatureBase = `public_id=${publicId}&timestamp=${timestamp}${cloudinaryApiSecret}`;
+      const signature = crypto.createHash('sha1').update(signatureBase).digest('hex');
+      const formData = new FormData();
+
+      formData.append(
+        'file',
+        new Blob([new Uint8Array(file.buffer)], { type: file.mimetype }),
+        file.originalname,
+      );
+      formData.append('api_key', cloudinaryApiKey);
+      formData.append('timestamp', timestamp);
+      formData.append('public_id', publicId);
+      formData.append('signature', signature);
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        },
+      );
+
+      if (response.ok) {
+        const result = (await response.json()) as {
+          secure_url?: string;
+          public_id?: string;
+        };
+
+        if (result.secure_url && result.public_id) {
+          return {
+            id: crypto.randomUUID(),
+            fileName: path.basename(result.public_id),
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            size: file.size,
+            url: result.secure_url,
+            storage: 'cloudinary',
+            publicId: result.public_id,
+            uploadedAt,
+            isCover,
+          };
+        }
+      }
+    }
+
+    const directory = path.join(process.cwd(), 'uploads', 'listings');
+    await mkdir(directory, { recursive: true });
+    const extension = path.extname(file.originalname || '').toLowerCase() || '.jpg';
+    const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`;
+    await writeFile(path.join(directory, fileName), file.buffer);
+
+    return {
+      id: crypto.randomUUID(),
+      fileName,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      url: `/uploads/listings/${fileName}`,
+      storage: 'local',
+      uploadedAt,
+      isCover,
+    };
+  }
+
+  private async deleteStoredPhoto(photo: ListingPhotoDto) {
+    if (photo.storage === 'cloudinary' && photo.publicId) {
+      const cloudinaryCloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
+      const cloudinaryApiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
+      const cloudinaryApiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
+
+      if (cloudinaryCloudName && cloudinaryApiKey && cloudinaryApiSecret) {
+        const timestamp = Math.floor(Date.now() / 1000).toString();
+        const signatureBase = `public_id=${photo.publicId}&timestamp=${timestamp}${cloudinaryApiSecret}`;
+        const signature = crypto.createHash('sha1').update(signatureBase).digest('hex');
+        const formData = new FormData();
+
+        formData.append('public_id', photo.publicId);
+        formData.append('api_key', cloudinaryApiKey);
+        formData.append('timestamp', timestamp);
+        formData.append('signature', signature);
+
+        await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/destroy`,
+          {
+            method: 'POST',
+            body: formData,
+          },
+        ).catch(() => undefined);
+      }
+
+      return;
+    }
+
+    if (photo.url.startsWith('/uploads/')) {
+      await unlink(path.join(process.cwd(), photo.url.replace(/^\/+/, ''))).catch(() => undefined);
+    }
   }
 }

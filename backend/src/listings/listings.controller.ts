@@ -15,9 +15,7 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { mkdirSync } from 'fs';
+import { memoryStorage } from 'multer';
 import type { UserRole } from '../transactions/dto/transaction.dto';
 import { buildAuthorizedActorContext } from '../transactions/auth/transaction-authorization';
 import {
@@ -131,17 +129,7 @@ export class ListingsController {
   @Post(':id/photos')
   @UseInterceptors(
     FilesInterceptor('files', 12, {
-      storage: diskStorage({
-        destination: (_request, _file, callback) => {
-          const directory = `${process.cwd()}/uploads/listings`;
-          mkdirSync(directory, { recursive: true });
-          callback(null, directory);
-        },
-        filename: (_request, file, callback) => {
-          const extension = extname(file.originalname || '').toLowerCase() || '.jpg';
-          callback(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`);
-        },
-      }),
+      storage: memoryStorage(),
       fileFilter: (_request, file, callback) => {
         if (!file.mimetype.startsWith('image/')) {
           callback(
@@ -162,7 +150,7 @@ export class ListingsController {
     @Param('id') id: string,
     @UploadedFiles()
     files: Array<{
-      filename: string;
+      buffer: Buffer;
       originalname: string;
       mimetype: string;
       size: number;

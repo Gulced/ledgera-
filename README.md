@@ -117,3 +117,25 @@ Notes:
 - backend details: [/Users/gulcekoc/ledgera/backend/README.md](/Users/gulcekoc/ledgera/backend/README.md)
 - frontend details: [/Users/gulcekoc/ledgera/frontend/README.md](/Users/gulcekoc/ledgera/frontend/README.md)
 - design rationale: [/Users/gulcekoc/ledgera/DESIGN.md](/Users/gulcekoc/ledgera/DESIGN.md)
+
+## Deployment
+
+Recommended stack-aligned deployment:
+- Database: `MongoDB Atlas`
+- Backend: `Render` web service from the `backend/` folder
+- Frontend: `Vercel` project from the `frontend/` folder
+
+Backend deployment notes:
+- a Render Blueprint file is included at [render.yaml](/Users/gulcekoc/ledgera/render.yaml)
+- set `MONGODB_URI` to your Atlas SRV connection string
+- set `CORS_ORIGINS` to your live Vercel frontend URL
+- optional AI support requires `GEMINI_API_KEY`
+
+Frontend deployment notes:
+- deploy the `frontend/` directory as a Nuxt project on Vercel
+- set `NUXT_PUBLIC_API_BASE` to your live Render backend URL
+
+Important upload note:
+- listing photo metadata is persisted in MongoDB with each listing record
+- image files are Cloudinary-ready for production deployment through `CLOUDINARY_*` environment variables
+- if Cloudinary is not configured, the backend falls back to local disk storage under `backend/uploads` for local development and basic demos

@@ -212,6 +212,8 @@ export interface ListingPhoto {
   mimeType: string;
   size: number;
   url: string;
+  storage: 'local' | 'cloudinary';
+  publicId?: string;
   uploadedAt: string;
   isCover: boolean;
 }

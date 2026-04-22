@@ -40,9 +40,14 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/ledgera?retryWrite
 MONGODB_DB=ledgera
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-2.5-flash
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_FOLDER=ledgera/listings
 ```
 
 `MONGODB_URI` should point to your MongoDB Atlas cluster for the mandatory stack requirement. The backend still accepts a local MongoDB URI for offline development, but Atlas is the intended submission target.
+Listing photos persist their metadata in MongoDB. When `CLOUDINARY_*` variables are configured, the image files are uploaded to Cloudinary; otherwise the backend falls back to local disk storage for development.
 
 The frontend is expected to run on:
 
