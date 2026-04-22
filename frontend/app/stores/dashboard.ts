@@ -99,20 +99,38 @@ export const useDashboardStore = defineStore('dashboard', () => {
     errorMessage.value = '';
 
     try {
-      const [summaryResponse, transactionsResponse] = await Promise.all([
+      const [summaryResult, transactionsResult] = await Promise.allSettled([
         api.getSummary(actor.value, filters),
         api.getTransactions(actor.value, filters),
       ]);
 
-      summary.value = summaryResponse;
-      transactions.value = transactionsResponse.items;
-      filters.page = transactionsResponse.paginationMeta.page;
-      filters.limit = transactionsResponse.paginationMeta.limit;
-      paginationMeta.value = transactionsResponse.paginationMeta;
-    } catch (error) {
-      const appError = error as { statusMessage?: string };
-      errorMessage.value =
-        appError.statusMessage ?? 'An error occurred while loading dashboard data.';
+      if (summaryResult.status === 'fulfilled') {
+        summary.value = summaryResult.value;
+      } else {
+        summary.value = null;
+      }
+
+      if (transactionsResult.status === 'fulfilled') {
+        transactions.value = transactionsResult.value.items;
+        filters.page = transactionsResult.value.paginationMeta.page;
+        filters.limit = transactionsResult.value.paginationMeta.limit;
+        paginationMeta.value = transactionsResult.value.paginationMeta;
+      } else {
+        transactions.value = [];
+        paginationMeta.value = {
+          page: 1,
+          limit: filters.limit,
+          totalItems: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPrevPage: false,
+        };
+      }
+
+      if (summaryResult.status === 'rejected' || transactionsResult.status === 'rejected') {
+        errorMessage.value =
+          'Some dashboard data could not be loaded for this role. Empty sections are shown instead.';
+      }
     } finally {
       isLoading.value = false;
     }
@@ -130,8 +148,11 @@ export const useDashboardStore = defineStore('dashboard', () => {
       listings.value = await api.getListings(actor.value, listingFilters);
     } catch (error) {
       const appError = error as { statusMessage?: string };
+      listings.value = [];
       errorMessage.value =
-        appError.statusMessage ?? 'An error occurred while loading listing data.';
+        activeRole.value === 'agent'
+          ? 'No listing data could be loaded for this agent yet.'
+          : appError.statusMessage ?? 'An error occurred while loading listing data.';
     } finally {
       isLoading.value = false;
     }

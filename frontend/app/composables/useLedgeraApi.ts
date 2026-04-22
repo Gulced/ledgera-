@@ -92,6 +92,34 @@ function getApiError(error: unknown) {
   };
 }
 
+function isLikelyNetworkError(error: unknown) {
+  const candidate = error as {
+    status?: number;
+    statusCode?: number;
+    name?: string;
+    message?: string;
+  };
+  const message = candidate.message ?? '';
+
+  return (
+    !candidate.status &&
+    !candidate.statusCode &&
+    (candidate.name === 'FetchError' ||
+      message.includes('Failed to fetch') ||
+      message.includes('fetch failed') ||
+      message.includes('NetworkError') ||
+      message.includes('CORS'))
+  );
+}
+
+function getFallbackErrorMessage(error: unknown, apiBase: string) {
+  if (isLikelyNetworkError(error)) {
+    return `Backend is unreachable. Make sure the API is running at ${apiBase}.`;
+  }
+
+  return 'The request could not be completed for the current user.';
+}
+
 export function useLedgeraApi() {
   const config = useRuntimeConfig();
 
@@ -174,7 +202,7 @@ export function useLedgeraApi() {
       const apiError = getApiError(error);
       const fallbackMessage =
         apiError.message ??
-        `Backend is unreachable. Make sure the API is running at ${config.public.apiBase}.`;
+        getFallbackErrorMessage(error, config.public.apiBase);
 
       throw createError({
         statusCode: apiError.statusCode,
@@ -209,7 +237,7 @@ export function useLedgeraApi() {
         const apiError = getApiError(error);
         const fallbackMessage =
           apiError.message ??
-          `Backend is unreachable. Make sure the API is running at ${config.public.apiBase}.`;
+          getFallbackErrorMessage(error, config.public.apiBase);
 
         throw createError({
           statusCode: apiError.statusCode,
@@ -426,7 +454,7 @@ export function useLedgeraApi() {
         const apiError = getApiError(error);
         const fallbackMessage =
           apiError.message ??
-          `Backend is unreachable. Make sure the API is running at ${config.public.apiBase}.`;
+          getFallbackErrorMessage(error, config.public.apiBase);
 
         throw createError({
           statusCode: apiError.statusCode,
