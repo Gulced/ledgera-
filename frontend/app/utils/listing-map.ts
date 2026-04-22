@@ -11,6 +11,17 @@ export const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   london: { lat: 51.5072, lng: -0.1276 },
 };
 
+function normalizeCity(input: string) {
+  return input
+    .trim()
+    .toLocaleLowerCase('tr-TR')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ı/g, 'i')
+    .replace(/[^a-z\s]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
 function hashString(input: string) {
   let hash = 0;
 
@@ -29,7 +40,7 @@ function offsetFromHash(hash: number, maxOffset: number) {
 export function getApproximateListingCoordinates(
   listing: Pick<Listing, 'city' | 'fullAddress' | 'id' | 'propertyRef'>,
 ) {
-  const base = CITY_COORDINATES[listing.city.trim().toLowerCase()];
+  const base = CITY_COORDINATES[normalizeCity(listing.city)];
 
   if (!base) {
     return null;
