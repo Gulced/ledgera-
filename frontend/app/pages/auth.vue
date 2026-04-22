@@ -16,6 +16,7 @@ const isSubmitting = ref(false);
 const errorMessage = ref('');
 const healthChecked = ref(false);
 const backendAvailable = ref(true);
+const showBackendBanner = ref(false);
 
 const loginForm = reactive({
   email: '',
@@ -41,7 +42,9 @@ onMounted(() => {
   }
 
   void (async () => {
-    backendAvailable.value = await api.checkBackendHealth();
+    const health = await api.checkBackendHealth();
+    backendAvailable.value = health.available;
+    showBackendBanner.value = health.showBanner;
     healthChecked.value = true;
   })();
 });
@@ -131,8 +134,8 @@ async function submitLogin() {
         </div>
 
         <div class="auth-form-card">
-          <p v-if="healthChecked && !backendAvailable" class="inline-error auth-inline-error">
-            Backend is unreachable. Make sure the API is running at {{ config.public.apiBase }}.
+          <p v-if="healthChecked && !backendAvailable && showBackendBanner" class="inline-error auth-inline-error">
+            Backend is unreachable. Make sure the API is running at {{ config.public.healthUrl || config.public.apiBase }}.
           </p>
 
           <p v-if="errorMessage" class="inline-error auth-inline-error">

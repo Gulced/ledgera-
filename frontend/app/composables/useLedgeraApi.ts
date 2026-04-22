@@ -56,23 +56,47 @@ export function useLedgeraApi() {
   const config = useRuntimeConfig();
 
   async function checkBackendHealth() {
-    try {
-      const response = await $fetch<
-        | { status?: string }
-        | ApiSuccess<{ status?: string }>
-      >('/health', {
-        baseURL: config.public.apiBase,
-        method: 'GET',
-      });
+    const healthUrl = config.public.healthUrl || `${config.public.apiBase}/health`;
 
-      if ('success' in response) {
-        return response.data?.status === 'ok';
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch(healthUrl, {
+          method: 'GET',
+          signal: controller.signal,
+          credentials: 'omit',
+          cache: 'no-store',
+        });
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          return { available: false, showBanner: false };
+        }
+
+        const data = (await response.json()) as { status?: string };
+        return {
+          available: data.status === 'ok',
+          showBanner: false,
+        };
+      } catch {
+        if (attempt === 2) {
+          return {
+            available: false,
+            showBanner: true,
+          };
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1200 * (attempt + 1)));
       }
-
-      return response.status === 'ok';
-    } catch {
-      return false;
     }
+
+    return {
+      available: false,
+      showBanner: true,
+    };
   }
 
   async function request<T>(

@@ -14,10 +14,12 @@ Example values:
 
 ```env
 NUXT_PUBLIC_API_BASE=http://localhost:3000
+NUXT_PUBLIC_HEALTH_URL=http://localhost:3000/health
 PORT=3003
 ```
 
 `NUXT_PUBLIC_API_BASE` should point to the backend API.
+`NUXT_PUBLIC_HEALTH_URL` should point to the backend health endpoint used by the login screen.
 
 ## Setup
 
@@ -99,6 +101,7 @@ Required environment variables:
 
 ```env
 NUXT_PUBLIC_API_BASE=https://your-render-backend.onrender.com
+NUXT_PUBLIC_HEALTH_URL=https://your-render-backend.onrender.com/health
 ```
 
 Notes:

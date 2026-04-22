@@ -135,6 +135,7 @@ Backend deployment notes:
 Frontend deployment notes:
 - deploy the `frontend/` directory as a Nuxt project on Vercel
 - set `NUXT_PUBLIC_API_BASE` to your live Render backend URL
+- set `NUXT_PUBLIC_HEALTH_URL` to your live Render health endpoint such as `https://your-backend.onrender.com/health`
 
 Important upload note:
 - listing photo metadata is persisted in MongoDB with each listing record

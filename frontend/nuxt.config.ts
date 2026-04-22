@@ -11,6 +11,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? 'http://localhost:3000',
+      healthUrl:
+        process.env.NUXT_PUBLIC_HEALTH_URL ??
+        'https://ledgera-4ut6.onrender.com/health',
     },
   },
   vite: {
